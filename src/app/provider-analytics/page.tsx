@@ -1,3 +1,4 @@
+"use client";
 import AnalyticsCharts from './AnalyticsCharts';
 import { useProviderAnalytics } from './useProviderAnalytics';
 

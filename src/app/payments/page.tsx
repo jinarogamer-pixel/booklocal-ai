@@ -1,21 +1,11 @@
-"use client";
+
+
 export const dynamic = 'force-dynamic';
-export const revalidate = false;
+export const revalidate = 0;
 
-import StripeConnect from './StripeConnect';
-import PayoutHistory from './PayoutHistory';
-import PaymentMethods from './PaymentMethods';
-import AuthGuard from '../components/AuthGuard';
+import PaymentsDashboard from './PaymentsDashboard';
 
-export default function PaymentsPage() {
-  return (
-    <AuthGuard>
-      <div style={{ maxWidth: 600, margin: '3rem auto' }}>
-        <h1 className="hero-title mb-4">Payments & Payouts</h1>
-        <StripeConnect />
-        <PayoutHistory />
-        <PaymentMethods />
-      </div>
-    </AuthGuard>
-  );
+export default function Page() {
+  // If you want to fetch data on the server, do it here and pass as props
+  return <PaymentsDashboard />;
 }

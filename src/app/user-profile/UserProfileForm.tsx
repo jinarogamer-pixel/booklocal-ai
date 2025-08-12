@@ -54,8 +54,12 @@ export default function UserProfileForm({ user }: { user: User }) {
         const err = await res.text();
         setError(err || 'Error');
       }
-    } catch (err: any) {
-      setError(err.message || 'Unexpected error');
+    } catch (err: unknown) {
+      if (err && typeof err === 'object' && 'message' in err) {
+        setError((err as { message?: string }).message || 'Unexpected error');
+      } else {
+        setError('Unexpected error');
+      }
     }
   }
 
@@ -72,8 +76,12 @@ export default function UserProfileForm({ user }: { user: User }) {
       const { error } = await supabase.auth.updateUser({ password: newPw });
       if (error) setError(error.message);
       else setMsg('Password changed!');
-    } catch (err: any) {
-      setError(err.message || 'Unexpected error');
+    } catch (err: unknown) {
+      if (err && typeof err === 'object' && 'message' in err) {
+        setError((err as { message?: string }).message || 'Unexpected error');
+      } else {
+        setError('Unexpected error');
+      }
     } finally {
       setPwLoading(false);
       setCurrentPw(''); setNewPw(''); setConfirmPw('');

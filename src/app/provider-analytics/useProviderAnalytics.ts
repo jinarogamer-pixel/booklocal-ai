@@ -56,8 +56,12 @@ export function useProviderAnalytics() {
           revenue: (bookings || []).reduce((sum: number, b: Booking) => sum + (b.amount || 0), 0),
           avgRating: reviews && reviews.length > 0 ? (reviews.reduce((sum: number, r: Review) => sum + (r.rating || 0), 0) / reviews.length).toFixed(2) : 'N/A',
         });
-      } catch (err: any) {
-        setError(err?.message || 'Failed to load analytics');
+      } catch (err: unknown) {
+        if (err && typeof err === 'object' && 'message' in err) {
+          setError((err as { message?: string }).message || 'Failed to load analytics');
+        } else {
+          setError('Failed to load analytics');
+        }
         setData(null);
       } finally {
         setLoading(false);

@@ -45,8 +45,12 @@ export function usePaymentsDashboard() {
         if (methodsError) throw methodsError;
         setPayouts(payoutsData || []);
         setMethods(methodsData || []);
-      } catch (err: any) {
-        setError(err.message || 'Failed to load payment data.');
+      } catch (err: unknown) {
+        if (err && typeof err === 'object' && 'message' in err) {
+          setError((err as { message?: string }).message || 'Failed to load payment data.');
+        } else {
+          setError('Failed to load payment data.');
+        }
         setPayouts([]);
         setMethods([]);
       } finally {

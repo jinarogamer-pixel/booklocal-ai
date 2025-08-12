@@ -133,9 +133,13 @@ export default function Home() {
         form.reset();
         trackEvent("waitlist_join_success");
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       setMsg("Unexpected error. Please try again later.");
-      captureError(err);
+      if (err && typeof err === 'object' && 'message' in err) {
+        captureError((err as { message?: string }).message);
+      } else {
+        captureError(err);
+      }
     } finally {
       setLoading(false);
     }
@@ -161,10 +165,14 @@ export default function Home() {
         setSearchResults(data || []);
         if (!data?.length) showNotification("info", "No results found.");
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       showNotification("error", "Unexpected error. Please try again later.");
       setSearchResults([]);
-      captureError(err);
+      if (err && typeof err === 'object' && 'message' in err) {
+        captureError((err as { message?: string }).message);
+      } else {
+        captureError(err);
+      }
     } finally {
       setSearchLoading(false);
     }
@@ -185,7 +193,7 @@ export default function Home() {
           if (activeFilters.location) supa = supa.ilike("location", `%${activeFilters.location}%`);
           const { data, error } = await supa.limit(20);
           if (!unsubscribedRef.current) setSearchResults(data || []);
-        } catch (err: any) {
+        } catch (err: unknown) {
           if (!unsubscribedRef.current) showNotification("error", "Realtime update failed.");
         }
       })

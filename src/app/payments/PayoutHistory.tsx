@@ -1,5 +1,12 @@
 import { usePaymentsDashboard } from './usePaymentsDashboard';
 
+interface Payout {
+  id: string;
+  amount: number;
+  date?: string;
+  created_at?: string;
+  status?: string;
+}
 export default function PayoutHistory() {
   const { payouts, loading } = usePaymentsDashboard();
   return (
@@ -8,7 +15,7 @@ export default function PayoutHistory() {
       {loading ? <div>Loading...</div> : (
         <ul className="mb-2 list-disc pl-6">
           {payouts.length === 0 && <li>No payouts yet.</li>}
-          {payouts.map((p: any) => (
+          {payouts.map((p: Payout) => (
             <li key={p.id}>{p.date || p.created_at}: ${p.amount}</li>
           ))}
         </ul>

@@ -5,7 +5,13 @@ import { useRouter } from 'next/navigation';
 import { useTranslation } from 'next-i18next';
 import { supabase } from '../../lib/supabaseClient';
 
-export default function UserProfileForm({ user }: { user: any }) {
+interface User {
+  id: string;
+  name?: string;
+  email: string;
+  avatar_url?: string;
+}
+export default function UserProfileForm({ user }: { user: User }) {
   const { t } = useTranslation('user-profile');
   const [name, setName] = useState(user?.name || '');
   const [email, setEmail] = useState(user?.email || '');

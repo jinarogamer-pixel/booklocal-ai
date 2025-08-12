@@ -32,16 +32,16 @@
  * @returns eventId (if available from Sentry or backend), else undefined
  */
 export async function captureError(
-  error: any,
-  context?: Record<string, any> & { user?: { id?: string; email?: string } },
+  error: unknown,
+  context?: Record<string, unknown> & { user?: { id?: string; email?: string } },
   fingerprint?: string[]
 ): Promise<string | undefined> {
   // 5. Security & privacy: redact sensitive fields
-  function redact(obj: any): any {
+  function redact(obj: Record<string, unknown>): Record<string, unknown> {
     if (!obj || typeof obj !== 'object') return obj;
     const SENSITIVE = ['password', 'token', 'accessToken', 'refreshToken', 'secret'];
     return Object.fromEntries(Object.entries(obj).map(([k, v]) =>
-      SENSITIVE.includes(k) ? [k, '[REDACTED]'] : [k, typeof v === 'object' ? redact(v) : v]
+      SENSITIVE.includes(k) ? [k, '[REDACTED]'] : [k, typeof v === 'object' ? redact(v as Record<string, unknown>) : v]
     ));
   }
   if (context) context = redact(context);
@@ -53,9 +53,9 @@ export async function captureError(
   }
 
   // In production, try Sentry (browser)
-  if (isProd && typeof window !== "undefined" && (window as any).Sentry) {
+  if (isProd && typeof window !== "undefined" && typeof (window as unknown as { Sentry?: { captureException: (error: unknown, context?: Record<string, unknown>) => string } }).Sentry !== 'undefined') {
     try {
-      const eventId = (window as any).Sentry.captureException(error, {
+      const eventId = (window as unknown as { Sentry: { captureException: (error: unknown, context?: Record<string, unknown>) => string } }).Sentry.captureException(error, {
         extra: context,
         user: context?.user,
         fingerprint,
@@ -72,7 +72,11 @@ export async function captureError(
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        error: typeof error === "string" ? error : (error?.message || JSON.stringify(error)),
+        error: typeof error === "string"
+          ? error
+          : (typeof error === 'object' && error && 'message' in error && typeof (error as { message?: string }).message === 'string')
+            ? (error as { message: string }).message
+            : JSON.stringify(error),
         context,
         env: isProd ? "production" : "development",
         timestamp: new Date().toISOString(),
@@ -96,8 +100,8 @@ export async function captureError(
  */
 export function getErrorEventId(err: unknown): string | undefined {
   if (!err) return undefined;
-  if (typeof err === 'object' && 'eventId' in err && typeof (err as any).eventId === 'string') {
-    return (err as any).eventId;
+  if (typeof err === 'object' && err && 'eventId' in err && typeof (err as { eventId?: string }).eventId === 'string') {
+    return (err as { eventId: string }).eventId;
   }
   return undefined;
 }

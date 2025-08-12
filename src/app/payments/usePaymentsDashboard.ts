@@ -3,10 +3,24 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { useUser } from '../components/AuthProvider';
 
+interface PaymentMethod {
+  id: string;
+  brand?: string;
+  last4?: string;
+  exp_month?: number;
+  exp_year?: number;
+}
+interface Payout {
+  id: string;
+  amount: number;
+  date?: string;
+  created_at?: string;
+  status?: string;
+}
 export function usePaymentsDashboard() {
   const { user } = useUser();
-  const [payouts, setPayouts] = useState<any[]>([]);
-  const [methods, setMethods] = useState<any[]>([]);
+  const [payouts, setPayouts] = useState<Payout[]>([]);
+  const [methods, setMethods] = useState<PaymentMethod[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {

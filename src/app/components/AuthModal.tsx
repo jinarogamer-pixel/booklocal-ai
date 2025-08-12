@@ -27,7 +27,12 @@ export default function AuthModal({ open, onClose }: { open: boolean; onClose: (
     setLoading(false);
     const error = result?.error;
     if (error) {
-      if (typeof error === 'object' && error && 'message' in error && typeof (error as any).message === 'string') {
+      if (
+        typeof error === 'object' &&
+        error &&
+        'message' in error &&
+        typeof (error as { message?: string }).message === 'string'
+      ) {
         setError((error as { message: string }).message);
       } else {
         setError('An unknown error occurred.');

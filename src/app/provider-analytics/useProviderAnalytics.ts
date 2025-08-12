@@ -3,9 +3,24 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { useUser } from '../components/AuthProvider';
 
+interface Booking {
+  id: string;
+  created_at: string;
+  amount: number;
+}
+interface Review {
+  id: string;
+  rating: number;
+}
+interface AnalyticsData {
+  bookings: Booking[];
+  reviews: Review[];
+  revenue: number;
+  avgRating: string | number;
+}
 export function useProviderAnalytics() {
   const { user } = useUser();
-  const [data, setData] = useState<any>(null);
+  const [data, setData] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {

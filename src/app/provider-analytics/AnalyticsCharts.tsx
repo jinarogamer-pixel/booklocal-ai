@@ -24,11 +24,11 @@ type AnalyticsChartsProps = {
 
 export default function AnalyticsCharts({ data }: AnalyticsChartsProps) {
   const bookingsData = {
-    labels: data.bookings.map((b: any) => b.month),
+    labels: data.bookings.map((b: { month: string; count: number }) => b.month),
     datasets: [
       {
         label: 'Bookings',
-        data: data.bookings.map((b: any) => b.count),
+        data: data.bookings.map((b: { month: string; count: number }) => b.count),
         backgroundColor: '#38bdf8',
       },
     ],

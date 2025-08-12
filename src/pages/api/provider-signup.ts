@@ -1,6 +1,5 @@
 // TypeScript: declare global for in-memory rate limiting
 declare global {
-  // eslint-disable-next-line no-var
   var providerRateLimit: Record<string, { count: number; start: number }> | undefined;
 }
 import type { NextApiRequest, NextApiResponse } from 'next';

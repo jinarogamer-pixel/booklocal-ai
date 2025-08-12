@@ -2,7 +2,12 @@
 import { useState } from 'react';
 import { supabase } from '../../lib/supabaseClient';
 
-export default function AccountSecurity({ user }: { user: any }) {
+interface User {
+  id: string;
+  email: string;
+  email_confirmed?: boolean;
+}
+export default function AccountSecurity({ user }: { user: User }) {
   const [msg, setMsg] = useState('');
   const [mfaUrl, setMfaUrl] = useState('');
   const [showDelete, setShowDelete] = useState(false);

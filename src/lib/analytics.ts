@@ -1,5 +1,5 @@
 // Example analytics abstraction (PostHog, Amplitude, etc.)
-export function trackEvent(event: string, props?: Record<string, any>) {
+export function trackEvent(event: string, props?: Record<string, unknown>) {
   // Replace with your analytics provider
   // window.posthog?.capture(event, props);
   // window.amplitude?.getInstance().logEvent(event, props);

@@ -1,5 +1,12 @@
 import { usePaymentsDashboard } from './usePaymentsDashboard';
 
+interface PaymentMethod {
+  id: string;
+  brand?: string;
+  last4?: string;
+  exp_month?: number;
+  exp_year?: number;
+}
 export default function PaymentMethods() {
   const { methods, loading } = usePaymentsDashboard();
   return (
@@ -8,7 +15,7 @@ export default function PaymentMethods() {
       {loading ? <div>Loading...</div> : (
         <ul className="mb-2 list-disc pl-6">
           {methods.length === 0 && <li>No payment methods.</li>}
-          {methods.map((m: any) => (
+          {methods.map((m: PaymentMethod) => (
             <li key={m.id}>{m.brand || 'Card'} •••• {m.last4 || m.id.slice(-4)}</li>
           ))}
         </ul>

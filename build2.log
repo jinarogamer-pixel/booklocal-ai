@@ -1,0 +1,98 @@
+
+> booklocal-ai@0.1.0 build
+> next build
+
+ ⚠ Warning: Found multiple lockfiles. Selecting /Users/molmecarl/package-lock.json.
+   Consider removing the lockfiles at:
+   * /Users/molmecarl/booklocal-ai/package-lock.json
+
+   ▲ Next.js 15.4.6
+   - Environments: .env.local
+
+   Creating an optimized production build ...
+Failed to compile.
+
+./src/app/layout.tsx
+Error:   [31mx[0m You're importing a component that needs `useEffect`. This React Hook only works in a Client Component. To fix, mark the file (or its parent) with the `"use client"` directive.
+  [31m|[0m
+  [31m|[0m  Learn more: https://nextjs.org/docs/app/api-reference/directives/use-client
+  [31m|[0m
+
+    ,-[[36;1;4m/Users/molmecarl/booklocal-ai/src/app/layout.tsx[0m:42:1]
+ [2m39[0m |   },
+ [2m40[0m | };
+ [2m41[0m | 
+ [2m42[0m | import { useEffect, useState } from "react";
+    : [35;1m         ^^^^^^^^^[0m
+ [2m43[0m | import NavBar from "./components/NavBar";
+ [2m44[0m | 
+ [2m45[0m | import { AuthProvider } from "./components/AuthProvider";
+    `----
+  [31mx[0m You're importing a component that needs `useState`. This React Hook only works in a Client Component. To fix, mark the file (or its parent) with the `"use client"` directive.
+  [31m|[0m
+  [31m|[0m  Learn more: https://nextjs.org/docs/app/api-reference/directives/use-client
+  [31m|[0m
+
+    ,-[[36;1;4m/Users/molmecarl/booklocal-ai/src/app/layout.tsx[0m:42:1]
+ [2m39[0m |   },
+ [2m40[0m | };
+ [2m41[0m | 
+ [2m42[0m | import { useEffect, useState } from "react";
+    : [35;1m                    ^^^^^^^^[0m
+ [2m43[0m | import NavBar from "./components/NavBar";
+ [2m44[0m | 
+ [2m45[0m | import { AuthProvider } from "./components/AuthProvider";
+    `----
+
+Import trace for requested module:
+./src/app/layout.tsx
+
+./src/app/user-profile/AccountSecurity.tsx
+Error:   [31mx[0m You're importing a component that needs `useState`. This React Hook only works in a Client Component. To fix, mark the file (or its parent) with the `"use client"` directive.
+  [31m|[0m
+  [31m|[0m  Learn more: https://nextjs.org/docs/app/api-reference/directives/use-client
+  [31m|[0m
+
+   ,-[[36;1;4m/Users/molmecarl/booklocal-ai/src/app/user-profile/AccountSecurity.tsx[0m:1:1]
+ [2m1[0m | import { useState } from 'react';
+   : [35;1m         ^^^^^^^^[0m
+ [2m2[0m | import { supabase } from '../../lib/supabaseClient';
+ [2m3[0m | 
+ [2m4[0m | export default function AccountSecurity({ user }: { user: any }) {
+   `----
+
+Import trace for requested module:
+./src/app/user-profile/AccountSecurity.tsx
+./src/app/user-profile/page.tsx
+
+./src/app/user-profile/UserProfileForm.tsx
+Error:   [31mx[0m You're importing a component that needs `useState`. This React Hook only works in a Client Component. To fix, mark the file (or its parent) with the `"use client"` directive.
+  [31m|[0m
+  [31m|[0m  Learn more: https://nextjs.org/docs/app/api-reference/directives/use-client
+  [31m|[0m
+
+   ,-[[36;1;4m/Users/molmecarl/booklocal-ai/src/app/user-profile/UserProfileForm.tsx[0m:2:1]
+ [2m1[0m | 
+ [2m2[0m | import { useState } from 'react';
+   : [35;1m         ^^^^^^^^[0m
+ [2m3[0m | import { useRouter } from 'next/router';
+ [2m4[0m | import { useTranslation } from 'next-i18next';
+ [2m5[0m | import { supabase } from '../../lib/supabaseClient';
+   `----
+  [31mx[0m You have a Server Component that imports next/router. Use next/navigation instead.
+  [31m|[0m Learn more: https://nextjs.org/docs/app/api-reference/functions/use-router
+   ,-[[36;1;4m/Users/molmecarl/booklocal-ai/src/app/user-profile/UserProfileForm.tsx[0m:3:1]
+ [2m1[0m | 
+ [2m2[0m | import { useState } from 'react';
+ [2m3[0m | import { useRouter } from 'next/router';
+   : [35;1m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+ [2m4[0m | import { useTranslation } from 'next-i18next';
+ [2m5[0m | import { supabase } from '../../lib/supabaseClient';
+   `----
+
+Import trace for requested module:
+./src/app/user-profile/UserProfileForm.tsx
+./src/app/user-profile/page.tsx
+
+
+> Build failed because of webpack errors

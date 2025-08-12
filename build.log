@@ -1,0 +1,101 @@
+
+> booklocal-ai@0.1.0 build
+> next build
+
+ ⚠ Warning: Found multiple lockfiles. Selecting /Users/molmecarl/package-lock.json.
+   Consider removing the lockfiles at:
+   * /Users/molmecarl/booklocal-ai/package-lock.json
+
+   ▲ Next.js 15.4.6
+   - Environments: .env.local
+
+   Creating an optimized production build ...
+   Disabled SWC as replacement for Babel because of custom Babel configuration ".babelrc" https://nextjs.org/docs/messages/swc-disabled
+   `compiler` options in `next.config.js` will be ignored while using Babel https://nextjs.org/docs/messages/ignored-compiler-options
+   Using external babel configuration from /Users/molmecarl/booklocal-ai/.babelrc
+Failed to compile.
+
+./node_modules/next/dist/shared/lib/is-thenable.js
+SyntaxError: JSON5: invalid end of input at 1:1
+    at syntaxError (/Users/molmecarl/booklocal-ai/node_modules/next/dist/compiled/json5/index.js:1:9814)
+    at invalidEOF (/Users/molmecarl/booklocal-ai/node_modules/next/dist/compiled/json5/index.js:1:9201)
+    at Object.start (/Users/molmecarl/booklocal-ai/node_modules/next/dist/compiled/json5/index.js:1:7538)
+    at Object.parse (/Users/molmecarl/booklocal-ai/node_modules/next/dist/compiled/json5/index.js:1:304)
+    at getCustomBabelConfig (/Users/molmecarl/booklocal-ai/node_modules/next/dist/build/babel/loader/get-config.js:155:31)
+    at Object.getFreshConfig (/Users/molmecarl/booklocal-ai/node_modules/next/dist/build/babel/loader/get-config.js:291:41)
+    at async Object.getConfig (/Users/molmecarl/booklocal-ai/node_modules/next/dist/build/babel/loader/get-config.js:385:25)
+    at async Object.transform (/Users/molmecarl/booklocal-ai/node_modules/next/dist/build/babel/loader/transform.js:74:25)
+    at async /Users/molmecarl/booklocal-ai/node_modules/next/dist/build/babel/loader/index.js:36:108
+    at async Span.traceAsyncFn (/Users/molmecarl/booklocal-ai/node_modules/next/dist/trace/trace.js:157:20)
+
+Import trace for requested module:
+./node_modules/next/dist/shared/lib/is-thenable.js
+./node_modules/next/dist/server/lib/trace/tracer.js
+
+./pages/api/robots.ts
+SyntaxError: JSON5: invalid end of input at 1:1
+    at syntaxError (/Users/molmecarl/booklocal-ai/node_modules/next/dist/compiled/json5/index.js:1:9814)
+    at invalidEOF (/Users/molmecarl/booklocal-ai/node_modules/next/dist/compiled/json5/index.js:1:9201)
+    at Object.start (/Users/molmecarl/booklocal-ai/node_modules/next/dist/compiled/json5/index.js:1:7538)
+    at Object.parse (/Users/molmecarl/booklocal-ai/node_modules/next/dist/compiled/json5/index.js:1:304)
+    at getCustomBabelConfig (/Users/molmecarl/booklocal-ai/node_modules/next/dist/build/babel/loader/get-config.js:155:31)
+    at Object.getFreshConfig (/Users/molmecarl/booklocal-ai/node_modules/next/dist/build/babel/loader/get-config.js:291:41)
+    at async Object.getConfig (/Users/molmecarl/booklocal-ai/node_modules/next/dist/build/babel/loader/get-config.js:385:25)
+    at async Object.transform (/Users/molmecarl/booklocal-ai/node_modules/next/dist/build/babel/loader/transform.js:74:25)
+    at async /Users/molmecarl/booklocal-ai/node_modules/next/dist/build/babel/loader/index.js:36:108
+    at async Span.traceAsyncFn (/Users/molmecarl/booklocal-ai/node_modules/next/dist/trace/trace.js:157:20)
+
+Import trace for requested module:
+./pages/api/robots.ts
+
+./pages/api/sitemap.ts
+SyntaxError: JSON5: invalid end of input at 1:1
+    at syntaxError (/Users/molmecarl/booklocal-ai/node_modules/next/dist/compiled/json5/index.js:1:9814)
+    at invalidEOF (/Users/molmecarl/booklocal-ai/node_modules/next/dist/compiled/json5/index.js:1:9201)
+    at Object.start (/Users/molmecarl/booklocal-ai/node_modules/next/dist/compiled/json5/index.js:1:7538)
+    at Object.parse (/Users/molmecarl/booklocal-ai/node_modules/next/dist/compiled/json5/index.js:1:304)
+    at getCustomBabelConfig (/Users/molmecarl/booklocal-ai/node_modules/next/dist/build/babel/loader/get-config.js:155:31)
+    at Object.getFreshConfig (/Users/molmecarl/booklocal-ai/node_modules/next/dist/build/babel/loader/get-config.js:291:41)
+    at async Object.getConfig (/Users/molmecarl/booklocal-ai/node_modules/next/dist/build/babel/loader/get-config.js:385:25)
+    at async Object.transform (/Users/molmecarl/booklocal-ai/node_modules/next/dist/build/babel/loader/transform.js:74:25)
+    at async /Users/molmecarl/booklocal-ai/node_modules/next/dist/build/babel/loader/index.js:36:108
+    at async Span.traceAsyncFn (/Users/molmecarl/booklocal-ai/node_modules/next/dist/trace/trace.js:157:20)
+
+Import trace for requested module:
+./pages/api/sitemap.ts
+
+./node_modules/next/dist/client/components/app-router-headers.js
+SyntaxError: JSON5: invalid end of input at 1:1
+    at syntaxError (/Users/molmecarl/booklocal-ai/node_modules/next/dist/compiled/json5/index.js:1:9814)
+    at invalidEOF (/Users/molmecarl/booklocal-ai/node_modules/next/dist/compiled/json5/index.js:1:9201)
+    at Object.start (/Users/molmecarl/booklocal-ai/node_modules/next/dist/compiled/json5/index.js:1:7538)
+    at Object.parse (/Users/molmecarl/booklocal-ai/node_modules/next/dist/compiled/json5/index.js:1:304)
+    at getCustomBabelConfig (/Users/molmecarl/booklocal-ai/node_modules/next/dist/build/babel/loader/get-config.js:155:31)
+    at Object.getFreshConfig (/Users/molmecarl/booklocal-ai/node_modules/next/dist/build/babel/loader/get-config.js:291:41)
+    at async Object.getConfig (/Users/molmecarl/booklocal-ai/node_modules/next/dist/build/babel/loader/get-config.js:385:25)
+    at async Object.transform (/Users/molmecarl/booklocal-ai/node_modules/next/dist/build/babel/loader/transform.js:74:25)
+    at async /Users/molmecarl/booklocal-ai/node_modules/next/dist/build/babel/loader/index.js:36:108
+    at async Span.traceAsyncFn (/Users/molmecarl/booklocal-ai/node_modules/next/dist/trace/trace.js:157:20)
+
+Import trace for requested module:
+./node_modules/next/dist/client/components/app-router-headers.js
+./node_modules/next/dist/server/send-payload.js
+
+./node_modules/next/dist/client/components/redirect-status-code.js
+SyntaxError: JSON5: invalid end of input at 1:1
+    at syntaxError (/Users/molmecarl/booklocal-ai/node_modules/next/dist/compiled/json5/index.js:1:9814)
+    at invalidEOF (/Users/molmecarl/booklocal-ai/node_modules/next/dist/compiled/json5/index.js:1:9201)
+    at Object.start (/Users/molmecarl/booklocal-ai/node_modules/next/dist/compiled/json5/index.js:1:7538)
+    at Object.parse (/Users/molmecarl/booklocal-ai/node_modules/next/dist/compiled/json5/index.js:1:304)
+    at getCustomBabelConfig (/Users/molmecarl/booklocal-ai/node_modules/next/dist/build/babel/loader/get-config.js:155:31)
+    at Object.getFreshConfig (/Users/molmecarl/booklocal-ai/node_modules/next/dist/build/babel/loader/get-config.js:291:41)
+    at async Object.getConfig (/Users/molmecarl/booklocal-ai/node_modules/next/dist/build/babel/loader/get-config.js:385:25)
+    at async Object.transform (/Users/molmecarl/booklocal-ai/node_modules/next/dist/build/babel/loader/transform.js:74:25)
+    at async /Users/molmecarl/booklocal-ai/node_modules/next/dist/build/babel/loader/index.js:36:108
+    at async Span.traceAsyncFn (/Users/molmecarl/booklocal-ai/node_modules/next/dist/trace/trace.js:157:20)
+
+Import trace for requested module:
+./node_modules/next/dist/client/components/redirect-status-code.js
+
+
+> Build failed because of webpack errors

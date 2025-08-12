@@ -1,0 +1,12 @@
+{
+  "profile": "Profil",
+  "name": "Name",
+  "email": "E-Mail",
+  "avatar": "Avatar",
+  "save": "Speichern",
+  "upload_avatar": "Avatar hochladen",
+  "change_password": "Passwort ändern",
+  "current_password": "Aktuelles Passwort",
+  "new_password": "Neues Passwort",
+  "confirm_password": "Passwort bestätigen"
+}

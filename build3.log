@@ -1,0 +1,68 @@
+
+> booklocal-ai@0.1.0 build
+> next build
+
+ ⚠ Warning: Found multiple lockfiles. Selecting /Users/molmecarl/package-lock.json.
+   Consider removing the lockfiles at:
+   * /Users/molmecarl/booklocal-ai/package-lock.json
+
+   ▲ Next.js 15.4.6
+   - Environments: .env.local
+
+   Creating an optimized production build ...
+Failed to compile.
+
+./src/app/components/NavBar.tsx
+Error:   [31mx[0m You're importing a component that needs `useState`. This React Hook only works in a Client Component. To fix, mark the file (or its parent) with the `"use client"` directive.
+  [31m|[0m
+  [31m|[0m  Learn more: https://nextjs.org/docs/app/api-reference/directives/use-client
+  [31m|[0m
+
+   ,-[[36;1;4m/Users/molmecarl/booklocal-ai/src/app/components/NavBar.tsx[0m:3:1]
+ [2m1[0m | import Link from 'next/link';
+ [2m2[0m | import { useUser } from './AuthProvider';
+ [2m3[0m | import { useState } from 'react';
+   : [35;1m         ^^^^^^^^[0m
+ [2m4[0m | import AuthModal from './AuthModal';
+ [2m5[0m | 
+ [2m6[0m | const navLinks = [
+   `----
+
+Import trace for requested module:
+./src/app/components/NavBar.tsx
+./src/app/layout.tsx
+
+./src/app/components/NotificationProvider.tsx
+Error:   [31mx[0m You're importing a component that needs `createContext`. This React Hook only works in a Client Component. To fix, mark the file (or its parent) with the `"use client"` directive.
+  [31m|[0m
+  [31m|[0m  Learn more: https://nextjs.org/docs/app/api-reference/directives/use-client
+  [31m|[0m
+
+   ,-[[36;1;4m/Users/molmecarl/booklocal-ai/src/app/components/NotificationProvider.tsx[0m:2:1]
+ [2m1[0m | // NotificationProvider: Context for in-app toasts/alerts
+ [2m2[0m | import { createContext, useContext, useState, ReactNode } from 'react';
+   : [35;1m         ^^^^^^^^^^^^^[0m
+ [2m3[0m | 
+ [2m4[0m | interface Notification {
+ [2m5[0m |   id: string;
+   `----
+  [31mx[0m You're importing a component that needs `useState`. This React Hook only works in a Client Component. To fix, mark the file (or its parent) with the `"use client"` directive.
+  [31m|[0m
+  [31m|[0m  Learn more: https://nextjs.org/docs/app/api-reference/directives/use-client
+  [31m|[0m
+
+   ,-[[36;1;4m/Users/molmecarl/booklocal-ai/src/app/components/NotificationProvider.tsx[0m:2:1]
+ [2m1[0m | // NotificationProvider: Context for in-app toasts/alerts
+ [2m2[0m | import { createContext, useContext, useState, ReactNode } from 'react';
+   : [35;1m                                    ^^^^^^^^[0m
+ [2m3[0m | 
+ [2m4[0m | interface Notification {
+ [2m5[0m |   id: string;
+   `----
+
+Import trace for requested module:
+./src/app/components/NotificationProvider.tsx
+./src/app/layout.tsx
+
+
+> Build failed because of webpack errors

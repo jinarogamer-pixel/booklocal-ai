@@ -1,0 +1,150 @@
+
+> booklocal-ai@0.1.0 build
+> next build
+
+ ⚠ Warning: Found multiple lockfiles. Selecting /Users/molmecarl/package-lock.json.
+   Consider removing the lockfiles at:
+   * /Users/molmecarl/booklocal-ai/package-lock.json
+
+   ▲ Next.js 15.4.6
+   - Environments: .env.local
+
+   Creating an optimized production build ...
+ ✓ Compiled successfully in 0ms
+   Linting and checking validity of types ...
+
+Failed to compile.
+
+./pages/404.tsx
+6:7  Error: Do not use an `<a>` element to navigate to `/`. Use `<Link />` from `next/link` instead. See: https://nextjs.org/docs/messages/no-html-link-for-pages  @next/next/no-html-link-for-pages
+
+./pages/500.tsx
+6:7  Error: Do not use an `<a>` element to navigate to `/`. Use `<Link />` from `next/link` instead. See: https://nextjs.org/docs/messages/no-html-link-for-pages  @next/next/no-html-link-for-pages
+
+./pages/api/sitemap.ts
+3:44  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/app/admin/AdminPanel.tsx
+15:34  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+23:38  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/app/admin/useAdminDashboard.ts
+5:38  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+6:46  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/app/api/upload-avatar.ts
+21:11  Warning: 'data' is assigned a value but never used.  @typescript-eslint/no-unused-vars
+
+./src/app/avatar-upload/page.tsx
+13:19  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./src/app/chat/page.tsx
+7:10  Warning: 'messages' is assigned a value but never used.  @typescript-eslint/no-unused-vars
+7:20  Warning: 'setMessages' is assigned a value but never used.  @typescript-eslint/no-unused-vars
+8:10  Warning: 'input' is assigned a value but never used.  @typescript-eslint/no-unused-vars
+8:17  Warning: 'setInput' is assigned a value but never used.  @typescript-eslint/no-unused-vars
+
+./src/app/components/AuthProvider.tsx
+6:9  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+9:56  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+10:56  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+17:36  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/app/components/ReviewModerationPanel.tsx
+30:84  Warning: 'payload' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./src/app/onboarding/page.tsx
+9:32  Error: `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`.  react/no-unescaped-entities
+
+./src/app/page.tsx
+6:8  Warning: 'Image' is defined but never used.  @typescript-eslint/no-unused-vars
+7:8  Warning: 'Link' is defined but never used.  @typescript-eslint/no-unused-vars
+10:8  Warning: 'AdvancedSearch' is defined but never used.  @typescript-eslint/no-unused-vars
+11:8  Warning: 'SearchResults' is defined but never used.  @typescript-eslint/no-unused-vars
+15:10  Warning: 'FAQ' is defined but never used.  @typescript-eslint/no-unused-vars
+48:10  Warning: 'searchResults' is assigned a value but never used.  @typescript-eslint/no-unused-vars
+49:10  Warning: 'searchLoading' is assigned a value but never used.  @typescript-eslint/no-unused-vars
+65:10  Warning: 'projectLoading' is assigned a value but never used.  @typescript-eslint/no-unused-vars
+66:10  Warning: 'projectMsg' is assigned a value but never used.  @typescript-eslint/no-unused-vars
+69:10  Warning: 'loading' is assigned a value but never used.  @typescript-eslint/no-unused-vars
+70:10  Warning: 'msg' is assigned a value but never used.  @typescript-eslint/no-unused-vars
+75:18  Warning: 'onPostProject' is defined but never used.  @typescript-eslint/no-unused-vars
+105:18  Warning: 'onJoin' is defined but never used.  @typescript-eslint/no-unused-vars
+135:18  Warning: 'handleAdvancedSearch' is defined but never used.  @typescript-eslint/no-unused-vars
+161:92  Warning: 'payload' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./src/app/payments/PaymentMethods.tsx
+11:28  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/app/payments/PayoutHistory.tsx
+11:28  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/app/payments/usePaymentsDashboard.ts
+8:42  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+9:42  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/app/provider-analytics/AnalyticsCharts.tsx
+27:35  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+31:37  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/app/provider-analytics/useProviderAnalytics.ts
+8:36  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+16:38  Warning: 'bookingsError' is assigned a value but never used.  @typescript-eslint/no-unused-vars
+20:37  Warning: 'reviewsError' is assigned a value but never used.  @typescript-eslint/no-unused-vars
+
+./src/app/provider-signup/page.tsx
+7:10  Warning: 'supabase' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./src/app/user-profile/AccountSecurity.tsx
+5:59  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+46:42  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./src/app/user-profile/UserProfileForm.tsx
+8:59  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+13:21  Warning: 'setAvatarUrl' is assigned a value but never used.  @typescript-eslint/no-unused-vars
+19:9  Warning: 'router' is assigned a value but never used.  @typescript-eslint/no-unused-vars
+61:23  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./src/app/user-profile/page.tsx
+1:10  Warning: 'serverSideTranslations' is defined but never used.  @typescript-eslint/no-unused-vars
+6:55  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/components/NavBar.tsx
+9:11  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./src/lib/analytics.ts
+2:28  Warning: 'event' is defined but never used.  @typescript-eslint/no-unused-vars
+2:43  Warning: 'props' is defined but never used.  @typescript-eslint/no-unused-vars
+2:66  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/lib/errorMonitoring.ts
+1:1  Warning: Expected an assignment or function call and instead saw an expression.  @typescript-eslint/no-unused-expressions
+35:10  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+36:28  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+40:24  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+40:30  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+56:61  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+58:34  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+99:69  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+100:20  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/lib/marketing.ts
+3:51  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+4:16  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/pages/api/__tests__/provider-signup.test.ts
+1:1  Error: Use "@ts-expect-error" instead of "@ts-ignore", as "@ts-ignore" will do nothing if the following line is error-free.  @typescript-eslint/ban-ts-comment
+14:26  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+14:32  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+18:45  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+20:23  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+21:16  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+47:5  Error: A `require()` style import is forbidden.  @typescript-eslint/no-require-imports
+
+./src/pages/api/log-error.ts
+16:7  Error: 'eventId' is never reassigned. Use 'const' instead.  prefer-const
+
+./src/pages/api/provider-signup.ts
+3:3  Warning: Unused eslint-disable directive (no problems were reported from 'no-var').
+
+info  - Need to disable some ESLint rules? Learn more here: https://nextjs.org/docs/app/api-reference/config/eslint#disabling-rules

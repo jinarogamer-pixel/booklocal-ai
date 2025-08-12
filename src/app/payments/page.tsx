@@ -1,3 +1,7 @@
+"use client";
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 import StripeConnect from './StripeConnect';
 import PayoutHistory from './PayoutHistory';
 import PaymentMethods from './PaymentMethods';

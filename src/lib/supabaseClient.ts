@@ -1,17 +1,10 @@
 // src/lib/supabaseClient.ts
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL as string;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY as string;
-
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Missing Supabase env vars: NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY');
+export function getSupabase() {
+  const url = process.env.NEXT_PUBLIC_BOOKLOCAL_SUPABASE_URL!;
+  const anon = process.env.NEXT_PUBLIC_BOOKLOCAL_SUPABASE_ANON_KEY!;
+  if (!/^https?:\/\//.test(url)) throw new Error('Invalid SUPABASE URL');
+  if (!anon || anon.includes('http')) throw new Error('Invalid ANON KEY');
+  return createClient(url, anon);
 }
-if (!/^https?:\/\//.test(supabaseUrl)) {
-  throw new Error('NEXT_PUBLIC_SUPABASE_URL is not a valid URL');
-}
-if (supabaseAnonKey.includes('http') || supabaseAnonKey.endsWith('/')) {
-  throw new Error('NEXT_PUBLIC_SUPABASE_ANON_KEY looks wrong (contains http or trailing /)');
-}
-
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);

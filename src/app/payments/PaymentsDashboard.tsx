@@ -4,8 +4,7 @@ import PayoutHistory from './PayoutHistory';
 import PaymentMethods from './PaymentMethods';
 import AuthGuard from '../components/AuthGuard';
 
-export default function PaymentsDashboard(props: any) {
-  // You can accept server-fetched data as props if needed
+export default function PaymentsDashboard() {
   return (
     <AuthGuard>
       <div style={{ maxWidth: 600, margin: '3rem auto' }}>

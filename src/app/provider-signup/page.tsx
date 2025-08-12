@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import ReCAPTCHA from "react-google-recaptcha";
 const RECAPTCHA_SITE_KEY = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || "YOUR_RECAPTCHA_SITE_KEY";
 import toast, { Toaster } from "react-hot-toast";
-import { supabase } from "../../lib/supabaseClient";
+import { getSupabase } from "../../lib/supabaseClient";
 import { NavBar } from "../../components/NavBar";
 import { DarkModeToggle } from "../../components/DarkModeToggle";
 import { BenefitsGrid } from "../../components/BenefitsGrid";
@@ -44,6 +44,9 @@ export default function ProviderSignup() {
         : [...prev.services, service]
     }));
   };
+
+  // Always use a local supabase instance if needed
+  const supabase = getSupabase();
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();

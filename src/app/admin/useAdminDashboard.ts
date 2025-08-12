@@ -1,5 +1,7 @@
+
+"use client";
 import { useEffect, useState } from 'react';
-import { supabase } from '@/lib/supabaseClient';
+import { getSupabase } from '@/lib/supabaseClient';
 
 interface User {
   id: string;
@@ -16,11 +18,23 @@ export function useAdminDashboard() {
   const [providers, setProviders] = useState<Provider[]>([]);
   const [loading, setLoading] = useState(true);
 
+
   useEffect(() => {
     async function fetchData() {
       setLoading(true);
-      const { data: usersData } = await supabase.from('users').select('*');
-      const { data: providersData } = await supabase.from('providers').select('*');
+      const supabase = getSupabase();
+      const { data: usersData, error: usersError } = await supabase.from('users').select('*');
+      if (usersError) {
+        setUsers([]);
+        setLoading(false);
+        return;
+      }
+      const { data: providersData, error: providersError } = await supabase.from('providers').select('*');
+      if (providersError) {
+        setProviders([]);
+        setLoading(false);
+        return;
+      }
       setUsers(usersData || []);
       setProviders(providersData || []);
       setLoading(false);

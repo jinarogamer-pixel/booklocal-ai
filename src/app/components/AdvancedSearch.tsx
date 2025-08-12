@@ -2,7 +2,7 @@
 import { useState } from 'react';
 
 
-export default function AdvancedSearch({ onSearch }: { onSearch: (query: string, filters: Record<string,string>) => void }) {
+export default function AdvancedSearch({ onSearch, loading, error }: { onSearch: (query: string, filters: Record<string,string>) => void, loading?: boolean, error?: string }) {
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState('');
   const [location, setLocation] = useState('');
@@ -12,11 +12,12 @@ export default function AdvancedSearch({ onSearch }: { onSearch: (query: string,
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    onSearch(query, { category, location, price, rating, experience });
+    if (!loading) onSearch(query, { category, location, price, rating, experience });
   }
 
   return (
-    <form className="glass-card flex flex-col md:flex-row gap-3 items-center p-4 animate-fade-in-up" onSubmit={handleSubmit}>
+    <form className="glass-card flex flex-col md:flex-row gap-3 items-center p-4 animate-fade-in-up" onSubmit={handleSubmit} aria-busy={loading} aria-live="polite">
+      {error && <div className="text-red-500 mb-2">{error}</div>}
       <input
         className="flex-1 px-4 py-2 rounded-lg border border-gray-200"
         placeholder="Search providers or services..."

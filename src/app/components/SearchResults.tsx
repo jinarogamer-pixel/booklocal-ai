@@ -9,8 +9,9 @@ export interface SearchResult {
   description?: string;
 }
 
-export default function SearchResults({ results, loading }: { results: SearchResult[]; loading: boolean }) {
+export default function SearchResults({ results, loading, error }: { results: SearchResult[]; loading: boolean; error?: string }) {
   if (loading) return <div className="empty-state">Searching…</div>;
+  if (error) return <div className="empty-state text-red-500">{error}</div>;
   if (!results.length) return <div className="empty-state">No results found.</div>;
   return (
     <div className="grid gap-4 mt-6">

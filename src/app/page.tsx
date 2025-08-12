@@ -2,7 +2,7 @@
 
 
 import { useState, useEffect } from "react";
-import { supabase } from "../lib/supabaseClient";
+import { getSupabase } from "../lib/supabaseClient";
 import Image from "next/image";
 import Link from "next/link";
 import { trackEvent } from "../lib/analytics";
@@ -43,7 +43,11 @@ function FAQ({ q, children }: { q: string; children: React.ReactNode }) {
 }
 
 
+import { useRef } from "react";
+
 export default function Home() {
+  const supabaseRef = useRef(getSupabase());
+  const supabase = supabaseRef.current;
   // State for advanced search
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
@@ -107,28 +111,34 @@ export default function Home() {
     setLoading(true);
     setMsg(null);
 
-    const form = e.currentTarget;
-    const email = (form.elements.namedItem("email") as HTMLInputElement)?.value?.trim();
+    try {
+      const form = e.currentTarget;
+      const email = (form.elements.namedItem("email") as HTMLInputElement)?.value?.trim();
 
-    if (!email) {
-      setMsg("Please enter an email address.");
+      if (!email) {
+        setMsg("Please enter an email address.");
+        setLoading(false);
+        trackEvent("waitlist_join_validation_error");
+        return;
+      }
+
+      const { error } = await supabase.from("waitlist").insert([{ email }]);
+
+      if (error) {
+        setMsg(`Error: ${error.message}`);
+        captureError(error, { email });
+        trackEvent("waitlist_join_error");
+      } else {
+        setMsg("Thanks! You’re on the list — we’ll email you soon.");
+        form.reset();
+        trackEvent("waitlist_join_success");
+      }
+    } catch (err: any) {
+      setMsg("Unexpected error. Please try again later.");
+      captureError(err);
+    } finally {
       setLoading(false);
-      trackEvent("waitlist_join_validation_error");
-      return;
     }
-
-    const { error } = await supabase.from("waitlist").insert([{ email }]);
-
-    if (error) {
-      setMsg(`Error: ${error.message}`);
-      captureError(error, { email });
-      trackEvent("waitlist_join_error");
-    } else {
-      setMsg("Thanks! You’re on the list — we’ll email you soon.");
-      form.reset();
-      trackEvent("waitlist_join_success");
-    }
-    setLoading(false);
   }
 
   // Advanced search handler (live Supabase search)
@@ -138,37 +148,50 @@ export default function Home() {
     setActiveFilters(filters);
     setActiveQuery(query);
     showNotification("info", `Searching for: ${query} ${filters.category ? `in ${filters.category}` : ''} ${filters.location ? `at ${filters.location}` : ''}`);
-    let supa = supabase.from("providers").select("id,name,category,location,description");
-    if (query) supa = supa.ilike("name", `%${query}%`);
-    if (filters.category) supa = supa.eq("category", filters.category);
-    if (filters.location) supa = supa.ilike("location", `%${filters.location}%`);
-    const { data, error } = await supa.limit(20);
-    if (error) {
-      showNotification("error", "Search failed. Try again later.");
+    try {
+      let supa = supabase.from("providers").select("id,name,category,location,description");
+      if (query) supa = supa.ilike("name", `%${query}%`);
+      if (filters.category) supa = supa.eq("category", filters.category);
+      if (filters.location) supa = supa.ilike("location", `%${filters.location}%`);
+      const { data, error } = await supa.limit(20);
+      if (error) {
+        showNotification("error", "Search failed. Try again later.");
+        setSearchResults([]);
+      } else {
+        setSearchResults(data || []);
+        if (!data?.length) showNotification("info", "No results found.");
+      }
+    } catch (err: any) {
+      showNotification("error", "Unexpected error. Please try again later.");
       setSearchResults([]);
-    } else {
-      setSearchResults(data || []);
-      if (!data?.length) showNotification("info", "No results found.");
+      captureError(err);
+    } finally {
+      setSearchLoading(false);
     }
-    setSearchLoading(false);
   }
 
   // Real-time subscription for provider listings
   useEffect(() => {
     // Only subscribe if a search has been performed
     if (!searchPerformed) return;
+    const unsubscribedRef = { current: false };
     const channel = supabase.channel('realtime:providers')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'providers' }, async (payload) => {
-        // Re-run the search with current filters
-        let supa = supabase.from("providers").select("id,name,category,location,description");
-        if (activeQuery) supa = supa.ilike("name", `%${activeQuery}%`);
-        if (activeFilters.category) supa = supa.eq("category", activeFilters.category);
-        if (activeFilters.location) supa = supa.ilike("location", `%${activeFilters.location}%`);
-        const { data } = await supa.limit(20);
-        setSearchResults(data || []);
+        if (unsubscribedRef.current) return;
+        try {
+          let supa = supabase.from("providers").select("id,name,category,location,description");
+          if (activeQuery) supa = supa.ilike("name", `%${activeQuery}%`);
+          if (activeFilters.category) supa = supa.eq("category", activeFilters.category);
+          if (activeFilters.location) supa = supa.ilike("location", `%${activeFilters.location}%`);
+          const { data, error } = await supa.limit(20);
+          if (!unsubscribedRef.current) setSearchResults(data || []);
+        } catch (err: any) {
+          if (!unsubscribedRef.current) showNotification("error", "Realtime update failed.");
+        }
       })
       .subscribe();
     return () => {
+      unsubscribedRef.current = true;
       supabase.removeChannel(channel);
     };
   }, [searchPerformed, activeQuery, activeFilters]);

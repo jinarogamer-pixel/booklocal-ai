@@ -1,16 +1,18 @@
-// TypeScript: declare global for in-memory rate limiting
-declare global {
-  var providerRateLimit: Record<string, { count: number; start: number }> | undefined;
-}
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { supabase } from '../../lib/supabaseClient';
+import { getSupabase } from '../../lib/supabaseClient';
 import { providerFormSchema } from '../../lib/providerValidation';
 import { sanitizeInput } from '../../lib/sanitize';
 import { captureError } from '../../lib/errorMonitoring';
 import { sendTransactionalEmail } from '../../lib/sendEmail';
-import fetch from 'node-fetch';
+
+// Add type to globalThis for providerRateLimit
+declare global {
+  // eslint-disable-next-line no-var
+  var providerRateLimit: Record<string, { count: number; start: number }> | undefined;
+}
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  const supabase = getSupabase();
   // --- Simple in-memory rate limiting (per IP, resets on server restart) ---
   const RATE_LIMIT_WINDOW = 60 * 60 * 1000; // 1 hour
   const RATE_LIMIT_MAX = 5; // max 5 requests per window
@@ -65,8 +67,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       description: sanitizeInput(formData.description ?? ''),
     };
 
-    // ...existing code...
-
     // Insert into Supabase
     const { error } = await supabase.from('providers').insert([{
       name: sanitized.name,
@@ -84,7 +84,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       await captureError(error, { sanitized });
       return res.status(500).json({ error: error.message });
     }
-
 
     // Send transactional email (provider confirmation)
     try {

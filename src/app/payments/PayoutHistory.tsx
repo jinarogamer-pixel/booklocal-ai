@@ -8,11 +8,11 @@ interface Payout {
   status?: string;
 }
 export default function PayoutHistory() {
-  const { payouts, loading } = usePaymentsDashboard();
+  const { payouts, loading, error } = usePaymentsDashboard();
   return (
     <div className="glass-card mb-6">
       <h2 className="section-title mb-2">Payout History</h2>
-      {loading ? <div>Loading...</div> : (
+      {loading ? <div>Loading...</div> : error ? <div className="text-red-500">{error}</div> : (
         <ul className="mb-2 list-disc pl-6">
           {payouts.length === 0 && <li>No payouts yet.</li>}
           {payouts.map((p: Payout) => (

@@ -1,6 +1,6 @@
 "use client";
 import { useState } from 'react';
-import { supabase } from '../../lib/supabaseClient';
+import { getSupabase } from '../../lib/supabaseClient';
 
 interface User {
   id: string;
@@ -11,6 +11,9 @@ export default function AccountSecurity({ user }: { user: User }) {
   const [msg, setMsg] = useState('');
   const [mfaUrl, setMfaUrl] = useState('');
   const [showDelete, setShowDelete] = useState(false);
+
+
+  const supabase = getSupabase();
 
   async function resendVerification() {
     const { error } = await supabase.auth.resend({ type: 'signup', email: user.email });

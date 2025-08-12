@@ -1,7 +1,7 @@
 "use client";
 // ReviewModerationPanel: Admin tool for moderating reviews
 import { useState, useEffect } from 'react';
-import { supabase } from '../../lib/supabaseClient';
+import { getSupabase } from '../../lib/supabaseClient';
 
 interface Review {
   id: string;
@@ -14,6 +14,10 @@ interface Review {
 export default function ReviewModerationPanel() {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
+
+
+  // Always use a local supabase instance
+  const supabase = getSupabase();
 
   // Fetch reviews from Supabase
   async function fetchReviews() {

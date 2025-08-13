@@ -39,24 +39,47 @@ export const metadata: Metadata = {
   },
 };
 
+
 import NavBar from "./components/NavBar";
 import { AuthProvider } from "./components/AuthProvider";
 import { NotificationProvider } from "./components/NotificationProvider";
 import DarkModeToggle from "./components/DarkModeToggle";
+import CookieBanner from "@/components/CookieBanner";
+import Link from "next/link";
+import { cookies } from "next/headers";
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+// Client-only listener moved to a dedicated component
+import ClientErrorListener from '@/components/ClientErrorListener';
+
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  // ClientErrorListener takes care of window-level error listeners
+   let consent = false;
+  try {
+    const cookieStore = await cookies();
+    consent = cookieStore.get('bl_consent')?.value?.includes('analytics=true') ?? false;
+  } catch {}
   return (
     <html lang="en">
+      <head>
+        {/* Example: gate analytics */}
+        {consent && (
+          // <script defer src="/* your analytics script */"></script>
+          <></>
+        )}
+      </head>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <NotificationProvider>
           <AuthProvider>
+            {/* Mount client-only global error listener */}
+            <ClientErrorListener />
             <DarkModeToggle />
             <NavBar />
             {children}
+            <footer className="w-full text-center text-xs text-neutral-500 py-8">
+              <Link href="/legal/privacy" className="underline mx-2">Privacy</Link>
+              <Link href="/legal/terms" className="underline mx-2">Terms</Link>
+            </footer>
+            <CookieBanner />
           </AuthProvider>
         </NotificationProvider>
       </body>

@@ -12,8 +12,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
+  
   const { error, context, env, timestamp, fingerprint } = req.body || {};
-  const eventId: string | undefined = undefined;
+  let eventId: string | undefined = undefined;
+  
   try {
     // 2. Forward to Sentry if configured
     // if (Sentry.getCurrentHub().getClient()) {
@@ -24,13 +26,34 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     //     tags: { env, timestamp },
     //   });
     // }
-    // 3. Fallback: log to server console
+    
+    // 3. Enhanced fallback: log to server console with more detail
     if (!eventId) {
-      console.error('[API /api/log-error]', { error, context, env, timestamp, fingerprint });
+      const logEntry = {
+        timestamp: timestamp || new Date().toISOString(),
+        error: error || 'Unknown error',
+        context: context || {},
+        env: env || 'unknown',
+        fingerprint: fingerprint || [],
+        source: 'api-log-error'
+      };
+      
+      console.error('[API /api/log-error] Error captured:', JSON.stringify(logEntry, null, 2));
+      
+      // Generate a simple event ID for tracking
+      eventId = `manual-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     }
+    
     res.status(200).json({ ok: true, eventId });
   } catch (err) {
     console.error('[API /api/log-error] Failed to log error:', err);
-    res.status(500).json({ error: 'Failed to log error' });
+    
+    // Even if logging fails, try to provide some response
+    const fallbackEventId = `fallback-${Date.now()}`;
+    res.status(500).json({ 
+      error: 'Failed to log error', 
+      eventId: fallbackEventId,
+      originalError: error 
+    });
   }
 }

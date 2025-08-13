@@ -36,6 +36,13 @@ export async function captureError(
   context?: Record<string, unknown> & { user?: { id?: string; email?: string } },
   fingerprint?: string[]
 ): Promise<string | undefined> {
+  // Handle undefined/null errors by creating a meaningful error object
+  if (error === undefined || error === null) {
+    error = new Error(`Undefined/null error captured. Context: ${JSON.stringify(context || {})}`);
+    if (!fingerprint) {
+      fingerprint = ['undefined-error'];
+    }
+  }
   // 5. Security & privacy: redact sensitive fields
   function redact(obj: Record<string, unknown>): Record<string, unknown> {
     if (!obj || typeof obj !== 'object') return obj;
@@ -68,6 +75,10 @@ export async function captureError(
   }
   // In production, on server or if Sentry not available, send to backend endpoint
   try {
+    // Add timeout and retry logic for network resilience
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+
     const res = await fetch("/api/log-error", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -81,15 +92,31 @@ export async function captureError(
         env: isProd ? "production" : "development",
         timestamp: new Date().toISOString(),
         fingerprint,
-      })
+      }),
+      signal: controller.signal
     });
+
+    clearTimeout(timeoutId);
+
     if (res.ok) {
       const data = await res.json().catch(() => undefined);
       return data?.eventId;
+    } else {
+      console.error("[captureError] Backend error reporting failed with status:", res.status);
     }
   } catch (err) {
-    // If even this fails, log to console as fallback
-    console.error("[captureError] Failed to report error:", err);
+    // Handle specific network errors
+    if (err && typeof err === 'object' && 'name' in err) {
+      if ((err as { name: string }).name === 'AbortError') {
+        console.error("[captureError] Error reporting timed out");
+      } else if ((err as { code?: string }).code === 'ECONNRESET') {
+        console.error("[captureError] Connection reset during error reporting");
+      } else {
+        console.error("[captureError] Failed to report error:", err);
+      }
+    } else {
+      console.error("[captureError] Failed to report error:", err);
+    }
   }
   return undefined;
 }

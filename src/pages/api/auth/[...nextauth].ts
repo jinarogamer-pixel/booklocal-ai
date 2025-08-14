@@ -1,7 +1,7 @@
 import NextAuth from 'next-auth';
 import GoogleProvider from 'next-auth/providers/google';
 
-export default NextAuth({
+export const authOptions = {
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID || '',
@@ -13,10 +13,15 @@ export default NextAuth({
     strategy: 'jwt',
   },
   callbacks: {
-    async session({ session, token }) {
-      // Attach minimal token info
-      session.user.id = token.sub;
+    async session({ session, token }: any) {
+      // Attach minimal token info safely
+      if (session && typeof session === 'object') {
+        (session as any).user = (session as any).user || {};
+        (session as any).user.id = token?.sub ?? (session as any).user.id;
+      }
       return session;
     },
   },
-});
+};
+
+export default NextAuth(authOptions as any);

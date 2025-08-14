@@ -4,47 +4,48 @@ import { providerFormSchema } from '../../lib/providerValidation';
 import { sanitizeInput } from '../../lib/sanitize';
 import { captureError } from '../../lib/errorMonitoring';
 import { sendTransactionalEmail } from '../../lib/sendEmail';
+import { rateLimitSliding } from '@/lib/rate-limit/redis-limiter';
 
 // Add type to globalThis for providerRateLimit
 declare global {
-   
   var providerRateLimit: Record<string, { count: number; start: number }> | undefined;
 }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const supabase = getSupabase();
-  // --- Simple in-memory rate limiting (per IP, resets on server restart) ---
-  const RATE_LIMIT_WINDOW = 60 * 60 * 1000; // 1 hour
+
+  // Rate limiting using Upstash sliding window. Fall back to allowing requests if Redis not configured.
+  const RATE_LIMIT_WINDOW = 60 * 60; // seconds (1 hour)
   const RATE_LIMIT_MAX = 5; // max 5 requests per window
-  const ip = req.headers["x-forwarded-for"]?.toString().split(",")[0] || req.socket.remoteAddress || "unknown";
-  if (!globalThis.providerRateLimit) globalThis.providerRateLimit = {};
-  const now = Date.now();
-  const rl = globalThis.providerRateLimit[ip] || { count: 0, start: now };
-  if (now - rl.start > RATE_LIMIT_WINDOW) {
-    rl.count = 0; rl.start = now;
-  }
-  rl.count++;
-  globalThis.providerRateLimit[ip] = rl;
-  if (rl.count > RATE_LIMIT_MAX) {
-    return res.status(429).json({ error: "Too many requests. Please try again later." });
+  const ip = (req.headers['x-forwarded-for'] as string | undefined)?.split(',')[0] || req.socket.remoteAddress || 'unknown';
+
+  try {
+    const rl = await rateLimitSliding(`provider-signup:${ip}`, RATE_LIMIT_MAX, RATE_LIMIT_WINDOW);
+    if (!rl.success) {
+      return res.status(429).json({ error: 'Too many requests. Please try again later.', resetAt: rl.resetAt });
+    }
+  } catch (err) {
+    // If rate limiter fails (no envs), allow to continue but log the error
+    await captureError(err, { ip, note: 'Rate limiter failed or not configured' });
   }
 
   // --- CAPTCHA verification (Google reCAPTCHA v2/v3) ---
-  const captchaToken = req.body.captchaToken;
+  const captchaToken = (req.body && (req.body.captchaToken || req.body.captcha)) || undefined;
   if (!captchaToken) {
-    return res.status(400).json({ error: "Missing CAPTCHA token." });
+    return res.status(400).json({ error: 'Missing CAPTCHA token.' });
   }
   const captchaSecret = process.env.RECAPTCHA_SECRET_KEY;
   try {
-    const captchaRes = await fetch(`https://www.google.com/recaptcha/api/siteverify?secret=${captchaSecret}&response=${captchaToken}`, { method: 'POST' });
-    const captchaData = (await captchaRes.json()) as { success: boolean };
+    const captchaRes = await fetch(`https://www.google.com/recaptcha/api/siteverify?secret=${captchaSecret}&response=${encodeURIComponent(captchaToken)}`, { method: 'POST' });
+    const captchaData = (await captchaRes.json()) as { success?: boolean };
     if (!captchaData.success) {
-      return res.status(400).json({ error: "CAPTCHA verification failed." });
+      return res.status(400).json({ error: 'CAPTCHA verification failed.' });
     }
   } catch (err) {
     await captureError(err, { ip, captchaToken });
-    return res.status(500).json({ error: "CAPTCHA verification error." });
+    return res.status(500).json({ error: 'CAPTCHA verification error.' });
   }
+
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
@@ -89,7 +90,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     try {
       await sendTransactionalEmail({
         to: sanitized.email,
-        subject: "BookLocal: Application Received",
+        subject: 'BookLocal: Application Received',
         html: `<p>Hi ${sanitized.name},</p><p>Thank you for applying to join BookLocal as a service provider! Our team will review your application and get back to you within 24 hours.</p><p>Best,<br/>BookLocal Team</p>`
       });
     } catch (err) {

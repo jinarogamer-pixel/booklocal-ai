@@ -42,6 +42,9 @@
     ".next/types/**/*.ts"
   ],
   "exclude": [
-    "node_modules"
+    "node_modules",
+    ".next",
+    "supabase/functions",
+    "booklocal-ai_for_claude.tar.gz"
   ]
 }

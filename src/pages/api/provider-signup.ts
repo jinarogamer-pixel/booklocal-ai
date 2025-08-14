@@ -7,7 +7,7 @@ import { sendTransactionalEmail } from '../../lib/sendEmail';
 
 // Add type to globalThis for providerRateLimit
 declare global {
-  // eslint-disable-next-line no-var
+   
   var providerRateLimit: Record<string, { count: number; start: number }> | undefined;
 }
 

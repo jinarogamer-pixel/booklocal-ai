@@ -25,7 +25,7 @@ serve(async (req) => {
     }
 
     let deletedCount = 0;
-    let errors = [];
+    const errors = [];
 
     for (const profile of profiles || []) {
       try {

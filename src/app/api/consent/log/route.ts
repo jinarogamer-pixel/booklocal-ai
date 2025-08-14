@@ -1,11 +1,11 @@
-
 import { NextResponse } from 'next/server';
 import { headers } from 'next/headers';
 import { getSupabase } from '@/lib/supabaseClient';
 
 export async function POST(req: Request) {
   try {
-    const { scope, value, userId } = await req.json();
+    const body = await req.json();
+    const { scope, value, userId } = body ?? {};
     if (typeof scope !== 'string' || typeof value !== 'boolean') {
       return NextResponse.json({ error: 'Bad payload' }, { status: 400 });
     }
@@ -19,8 +19,9 @@ export async function POST(req: Request) {
     await supabase.from('consent_log').insert({ user_id: userId ?? null, scope, value, ua, ip });
 
     return NextResponse.json({ ok: true });
-  } catch (e: any) {
-    return NextResponse.json({ error: e?.message ?? 'Server error' }, { status: 500 });
+  } catch (err: unknown) {
+    const message = err && typeof err === 'object' && 'message' in err ? (err as { message?: string }).message ?? 'Server error' : 'Server error';
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
 
@@ -42,7 +43,8 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
     return NextResponse.json({ data });
-  } catch (e: any) {
-    return NextResponse.json({ error: e?.message ?? 'Server error' }, { status: 500 });
+  } catch (err: unknown) {
+    const message = err && typeof err === 'object' && 'message' in err ? (err as { message?: string }).message ?? 'Server error' : 'Server error';
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

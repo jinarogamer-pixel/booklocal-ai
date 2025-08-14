@@ -10,8 +10,22 @@ export default function ClientErrorListener() {
     }
 
     function handleUnhandledRejection(event: PromiseRejectionEvent) {
-      const reason = (event.reason as any) ?? 'Unhandled promise rejection';
-      const message = typeof reason === 'string' ? reason : reason?.message ?? JSON.stringify(reason);
+      const reason: unknown = event.reason ?? 'Unhandled promise rejection';
+      let message: string;
+
+      if (typeof reason === 'string') {
+        message = reason;
+      } else if (reason && typeof (reason as { message?: unknown }).message === 'string') {
+        // narrow to access message safely without using `any`
+        message = (reason as { message: string }).message;
+      } else {
+        try {
+          message = JSON.stringify(reason);
+        } catch (_e) {
+          message = 'Unhandled promise rejection (unserializable)';
+        }
+      }
+
       logError(message);
     }
 

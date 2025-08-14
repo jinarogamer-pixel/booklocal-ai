@@ -1,22 +1,30 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
+import { Redis } from '@upstash/redis';
 
-const RATE_LIMIT = 100; // requests per 15 min
-const WINDOW = 15 * 60 * 1000;
-const ipMap = new Map<string, { count: number; start: number }>();
+const redis = new Redis({
+  url: process.env.UPSTASH_REDIS_REST_URL || '',
+  token: process.env.UPSTASH_REDIS_REST_TOKEN || '',
+});
 
-export default function handler(req: NextApiRequest, res: NextApiResponse) {
-  const ip = req.headers['x-forwarded-for']?.toString() || req.socket.remoteAddress || '';
-  const now = Date.now();
-  const entry = ipMap.get(ip) || { count: 0, start: now };
-  if (now - entry.start > WINDOW) {
-    entry.count = 0;
-    entry.start = now;
-  }
-  entry.count++;
-  ipMap.set(ip, entry);
-  if (entry.count > RATE_LIMIT) {
-    res.status(429).json({ error: 'Too many requests' });
-    return;
-  }
-  res.status(200).json({ ok: true });
+export async function checkRateLimit(key: string, limit = 100, windowSeconds = 900) {
+  const now = Math.floor(Date.now() / 1000);
+  const res = await redis.eval(
+    `local current = redis.call('INCR', KEYS[1])
+     if tonumber(current) == 1 then
+       redis.call('EXPIRE', KEYS[1], ARGV[1])
+     end
+     return current`,
+    [key],
+    [windowSeconds.toString()]
+  );
+
+  const count = typeof res === 'string' ? parseInt(res, 10) : (typeof res === 'number' ? res : 0);
+  return { ok: count <= limit, count };
+}
+
+export default async function rateLimit(req: NextApiRequest, res: NextApiResponse) {
+  const ip = req.headers['x-forwarded-for']?.toString().split(',')[0] || req.socket.remoteAddress || 'unknown';
+  const { ok, count } = await checkRateLimit(`rl:${ip}`, 100, 900);
+  if (!ok) return res.status(429).json({ error: 'Too many requests' });
+  return res.status(200).json({ ok: true, remaining: Math.max(0, 100 - count) });
 }

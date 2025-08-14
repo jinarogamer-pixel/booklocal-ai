@@ -30,7 +30,8 @@ export async function POST() {
     await supabase.from('audit_log').insert({ user_id: uid, action: 'account_delete', details: { reason: 'user requested deletion' } });
 
     return NextResponse.json({ ok: true });
-  } catch (e: any) {
-    return NextResponse.json({ error: e?.message ?? 'Server error' }, { status: 500 });
+  } catch (err: unknown) {
+    const message = err && typeof err === 'object' && 'message' in err ? (err as { message?: string }).message ?? 'Server error' : 'Server error';
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

@@ -45,6 +45,8 @@
     "node_modules",
     ".next",
     "supabase/functions",
-    "booklocal-ai_for_claude.tar.gz"
+    "booklocal-ai_for_claude.tar.gz",
+    "booklocal-ai/public/**",
+    "public/booklocal-ai_for_claude/**"
   ]
 }

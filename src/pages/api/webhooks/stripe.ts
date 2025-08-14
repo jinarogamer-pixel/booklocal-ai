@@ -9,7 +9,7 @@ export const config = {
 };
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
-  apiVersion: '2024-06-20',
+  apiVersion: process.env.STRIPE_API_VERSION as any || undefined,
 });
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -20,7 +20,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   let buf: Buffer;
   try {
-    buf = await getRawBody(req);
+    buf = await getRawBody(req as any);
   } catch (err) {
     console.error('Failed to read raw body', err);
     return res.status(400).json({ error: 'Invalid body' });

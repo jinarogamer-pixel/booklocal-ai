@@ -8,7 +8,7 @@ const redis = new Redis({
 
 export async function checkRateLimit(key: string, limit = 100, windowSeconds = 900) {
   const now = Math.floor(Date.now() / 1000);
-  const res = await redis.eval<string>(
+  const res = await redis.eval(
     `local current = redis.call('INCR', KEYS[1])
      if tonumber(current) == 1 then
        redis.call('EXPIRE', KEYS[1], ARGV[1])
@@ -17,7 +17,8 @@ export async function checkRateLimit(key: string, limit = 100, windowSeconds = 9
     [key],
     [windowSeconds.toString()]
   );
-  const count = parseInt(res || '0', 10);
+
+  const count = typeof res === 'string' ? parseInt(res, 10) : (typeof res === 'number' ? res : 0);
   return { ok: count <= limit, count };
 }
 

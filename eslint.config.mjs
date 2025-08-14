@@ -10,6 +10,9 @@ const compat = new FlatCompat({
 });
 
 const eslintConfig = [
+  {
+    ignores: [".next/**", "supabase/functions/**", "booklocal-ai_for_claude.tar.gz"],
+  },
   ...compat.extends("next/core-web-vitals", "next/typescript"),
 ];
 

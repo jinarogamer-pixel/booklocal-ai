@@ -15,9 +15,9 @@ export default function ClientErrorListener() {
 
       if (typeof reason === 'string') {
         message = reason;
-      } else if (reason && typeof (reason as any)?.message === 'string') {
-        // narrow to access message safely
-        message = (reason as { message?: string }).message as string;
+      } else if (reason && typeof (reason as { message?: unknown }).message === 'string') {
+        // narrow to access message safely without using `any`
+        message = (reason as { message: string }).message;
       } else {
         try {
           message = JSON.stringify(reason);

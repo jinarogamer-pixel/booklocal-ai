@@ -27,7 +27,7 @@ export async function logError(error: unknown) {
         });
       } catch (_err) {
         // Last resort: swallow to avoid crashing the app
-        // eslint-disable-next-line no-console
+         
         console.error('Failed to send error to /api/log-error on retry', _err);
       }
     }, 2000);

@@ -16,7 +16,7 @@ export async function logError(error: unknown) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ error: normalized.message, stack: normalized.stack })
     });
-  } catch (e) {
+  } catch (_e) {
     // Retry logic for network errors
     setTimeout(() => {
       try {

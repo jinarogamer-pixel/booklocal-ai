@@ -69,6 +69,7 @@ const PremiumLandingPage = () => {
   
   // AI Systems state
   const [quoteLoading, setQuoteLoading] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [currentQuote, setCurrentQuote] = useState<any>(null);
   const supabase = getSupabase();
   
@@ -82,6 +83,7 @@ const PremiumLandingPage = () => {
   
   // Search functionality state
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -151,6 +153,7 @@ const PremiumLandingPage = () => {
   }
 
   // Advanced Search handler
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async function handleAdvancedSearch(query: string, filters: any) {
     setSearchLoading(true);
     setSearchQuery(query);

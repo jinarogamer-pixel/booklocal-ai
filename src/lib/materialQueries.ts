@@ -133,6 +133,7 @@ export async function findMaterialProviders(query: MaterialQuery): Promise<Mater
 
   // Transform and filter results
   return (data || [])
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     .map((item: any) => ({
       provider_id: item.provider_id,
       name: item.name,
@@ -236,6 +237,7 @@ export async function getFullRoomProviders(
   }
 
   // Group by provider and filter those who handle multiple categories
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const providerGroups = (data || []).reduce((acc: any, item: any) => {
     if (!acc[item.provider_id]) {
       acc[item.provider_id] = {
@@ -255,10 +257,13 @@ export async function getFullRoomProviders(
 
   // Filter providers who can handle at least 2 of the requested materials
   const multiMaterialProviders = Object.values(providerGroups)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     .filter((provider: any) => provider.categories.size >= Math.min(2, materials.length))
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     .sort((a: any, b: any) => b.trust_score - a.trust_score)
     .slice(0, limit);
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return multiMaterialProviders.map((provider: any) => ({
     provider_id: provider.provider_id,
     name: provider.name,

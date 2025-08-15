@@ -34,7 +34,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   try {
     buf = await getRawBody(req as unknown as NodeJS.ReadableStream) as Buffer;
   } catch (err) {
-    // eslint-disable-next-line no-console
     console.error('Failed to read raw body', err);
     return res.status(400).json({ error: 'Invalid body' });
   }
@@ -43,12 +42,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   try {
     event = stripe.webhooks.constructEvent(buf, sig, process.env.STRIPE_WEBHOOK_SECRET || '');
   } catch (err) {
-    // eslint-disable-next-line no-console
     console.error('Webhook signature verification failed', err);
     return res.status(400).json({ error: 'Invalid signature' });
   }
 
-  // eslint-disable-next-line no-console
   console.log('[AUDIT] Stripe event:', event.type);
 
   switch (event.type) {
@@ -59,7 +56,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       // handle invoice paid
       break;
     default:
-      // eslint-disable-next-line no-console
       console.log('Unhandled event type', event.type);
   }
 

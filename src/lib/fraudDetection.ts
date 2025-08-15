@@ -6,7 +6,7 @@ export interface FraudSignal {
   severity: 'low' | 'medium' | 'high';
   description: string;
   confidence: number; // 0-1
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 export interface FraudAssessment {

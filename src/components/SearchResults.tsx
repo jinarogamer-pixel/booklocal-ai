@@ -243,6 +243,7 @@ export default function SearchResults({ results, loading, query, totalResults }:
           {/* Sort Options */}
           <select
             value={sortBy}
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             onChange={(e) => setSortBy(e.target.value as any)}
             className="bg-white/10 border border-white/20 text-white rounded-xl px-4 py-2 focus:outline-none focus:border-blue-400"
           >

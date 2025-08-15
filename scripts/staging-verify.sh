@@ -14,7 +14,7 @@ psql "$SUPABASE_DB_URL" -c "SELECT id, user_email, action, entity_type, timestam
 psql "$SUPABASE_DB_URL" -c "SELECT COUNT(*) FROM bookings;"
 
 # Check RLS: show policies on users
-psql "$SUPABASE_DB_URL" -c "SELECT polname, polpermissive FROM pg_policies WHERE tablename = 'users';"
+psql "$SUPABASE_DB_URL" -c "SELECT policyname, polpermissive FROM pg_policies WHERE tablename = 'users';"
 
 # Basic HTTP checks (requires STAGING_APP_URL to be set)
 if [ -n "${STAGING_APP_URL:-}" ]; then

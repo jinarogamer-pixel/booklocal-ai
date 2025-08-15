@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import ErrorBoundary from "./components/ErrorBoundary";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -74,7 +75,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             <ClientErrorListener />
             <DarkModeToggle />
             <NavBar />
-            {children}
+            <ErrorBoundary>
+              {children}
+            </ErrorBoundary>
             <footer className="w-full text-center text-xs text-neutral-500 py-8">
               <Link href="/legal/privacy" className="underline mx-2">Privacy</Link>
               <Link href="/legal/terms" className="underline mx-2">Terms</Link>

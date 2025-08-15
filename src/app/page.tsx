@@ -1,5 +1,5 @@
 "use client";
-import React from 'react';
+import React, { useEffect } from 'react';
 import dynamic from 'next/dynamic';
 
 // Dynamic import with better error handling
@@ -28,5 +28,10 @@ const PremiumLandingPage = dynamic(() => import('@/components/PremiumLandingPage
 });
 
 export default function Home() {
+  useEffect(() => {
+    // sanity check for mounting/hydration
+    console.log("Home mounted ✓");
+  }, []);
+
   return <PremiumLandingPage />;
 }

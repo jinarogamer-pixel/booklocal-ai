@@ -26,15 +26,15 @@
 
 
 :root {
-  /* Color palette */
-  --background: #f8fafc;
-  --foreground: #0a0a0a;
-  --primary: #0ea5e9;
-  --primary-dark: #0e7490;
+  /* Premium color palette */
+  --background: #F8FAFC;
+  --foreground: #0B1016;
+  --primary: #22D3EE;
+  --primary-dark: #06B6D4;
   --secondary: #10b981;
   --border: #e5e7eb;
   --radius: 1.2rem;
-  --shadow: 0 8px 32px 0 rgba(16,185,255,0.13), 0 2px 12px 0 rgba(16,185,255,0.10);
+  --shadow: 0 8px 32px 0 rgba(34,211,238,0.13), 0 2px 12px 0 rgba(34,211,238,0.10);
   --input-bg: #fff;
   --input-border: #bae6fd;
   --font-sans: 'Geist', 'Inter', Arial, Helvetica, sans-serif;
@@ -99,28 +99,27 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-    --primary: #38bdf8;
-    --primary-dark: #0ea5e9;
+    --background: #0B1016;
+    --foreground: #F8FAFC;
+    --primary: #22D3EE;
+    --primary-dark: #06B6D4;
     --secondary: #10b981;
     --border: #1e293b;
     --input-bg: #171717;
-    --input-border: #38bdf8;
+    --input-border: #22D3EE;
   }
 }
 
-
 /* Enable dark mode via .dark class for JS toggle */
 .dark {
-  --background: #0a0a0a;
-  --foreground: #ededed;
-  --primary: #38bdf8;
-  --primary-dark: #0ea5e9;
+  --background: #0B1016;
+  --foreground: #F8FAFC;
+  --primary: #22D3EE;
+  --primary-dark: #06B6D4;
   --secondary: #10b981;
   --border: #1e293b;
   --input-bg: #171717;
-  --input-border: #38bdf8;
+  --input-border: #22D3EE;
 }
 
 /* Skeleton loader utility */
@@ -219,12 +218,25 @@ input:focus, textarea:focus, select:focus {
 
 body {
   min-height: 100vh;
-  background: radial-gradient(ellipse at 60% 0%, #e0f2fe 0%, #bae6fd 40%, #a7f3d0 80%, #0f172a 100%);
+  background: #0B1016;
   color: var(--foreground);
   font-family: var(--font-sans), 'Geist', 'Inter', Arial, Helvetica, sans-serif;
   letter-spacing: 0.01em;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  position: relative;
+}
+
+/* Subtle vignette + noise for cinematic feel */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background: 
+    radial-gradient(1200px 600px at 60% -10%, rgba(255,255,255,.06), transparent 60%),
+    radial-gradient(900px 500px at 10% 110%, rgba(0,0,0,.35), transparent 60%);
+  z-index: -1;
 }
 
 .glass-card {
@@ -270,24 +282,24 @@ input:focus, textarea:focus, select:focus {
 }
 
 .btn-primary {
-  background: linear-gradient(90deg, #0ea5e9 0%, #10b981 100%);
+  background: linear-gradient(90deg, #06B6D4 0%, #22D3EE 100%);
   color: #fff;
   border-radius: 9999px;
   font-weight: 700;
   font-size: 1.15rem;
   padding: 0.85rem 2.5rem;
   letter-spacing: 0.01em;
-  box-shadow: 0 2px 12px 0 rgba(16, 185, 255, 0.13);
+  box-shadow: 0 2px 12px 0 rgba(34, 211, 238, 0.13);
   transition: background 0.22s, box-shadow 0.22s, transform 0.22s, filter 0.18s;
   position: relative;
   overflow: hidden;
-  text-shadow: 0 1px 2px rgba(16, 185, 255, 0.10);
+  text-shadow: 0 1px 2px rgba(34, 211, 238, 0.10);
 }
 .btn-primary:hover {
-  background: linear-gradient(90deg, #10b981 0%, #0ea5e9 100%);
-  box-shadow: 0 6px 24px 0 rgba(16, 185, 255, 0.22);
+  background: linear-gradient(90deg, #22D3EE 0%, #06B6D4 100%);
+  box-shadow: 0 6px 24px 0 rgba(34, 211, 238, 0.22);
   transform: translateY(-2px) scale(1.045);
-  filter: brightness(1.08) saturate(1.2);
+  filter: brightness(1.05) saturate(1.1);
 }
 .btn-primary:focus {
   filter: brightness(1.08) saturate(1.2);

@@ -23,7 +23,7 @@ export function getSupabase() {
         signOut: () => ({ error: null }),
         getUser: () => ({ data: { user: null }, error: null }),
       }
-    } as any;
+    } as unknown as ReturnType<typeof createClient>;
   }
   
   if (!/^https?:\/\//.test(url)) throw new Error('Invalid SUPABASE URL');

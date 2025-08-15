@@ -105,7 +105,7 @@ export default function FinishSwap() {
   }
 
   // Query providers based on material preset
-  async function queryProvidersForPreset(preset: any) {
+  async function queryProvidersForPreset(preset: { name: string; [key: string]: unknown }) {
     try {
       const style = preset.name.toLowerCase().includes('modern') ? 'modern' : 
                    preset.name.toLowerCase().includes('minimal') ? 'contemporary' :

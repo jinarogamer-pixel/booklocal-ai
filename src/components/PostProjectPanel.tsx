@@ -49,8 +49,9 @@ export default function PostProjectPanel() {
         setMsg("Project posted! Pros will reach out soon.");
         setTimeout(() => setOpen(false), 700);
       }
-    } catch (err: any) {
-      setMsg(err?.message || "Unexpected error");
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : "Unexpected error";
+      setMsg(errorMessage);
     } finally { 
       setLoading(false); 
     }

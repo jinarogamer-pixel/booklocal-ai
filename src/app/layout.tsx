@@ -42,7 +42,7 @@ export const metadata: Metadata = {
 
 import NavBar from "./components/NavBar";
 import { AuthProvider } from "./components/AuthProvider";
-import { NotificationProvider } from "./components/NotificationProvider";
+import { NotificationProvider } from "../components/NotificationProvider";
 import DarkModeToggle from "./components/DarkModeToggle";
 import CookieBanner from "@/components/CookieBanner";
 import Link from "next/link";

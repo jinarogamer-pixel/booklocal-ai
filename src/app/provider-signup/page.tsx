@@ -57,7 +57,7 @@ export default function ProviderSignup() {
     // Zod validation
     const result = providerFormSchema.safeParse(formData);
     if (!result.success) {
-      trackEvent("provider_signup_validation_error", { errors: result.error.issues });
+      trackEvent("provider_signup_validation_error", { errorCount: result.error.issues.length });
       const errors: Record<string, string> = {};
       result.error.issues.forEach((err) => {
         if (err.path && err.path[0]) errors[err.path[0] as string] = err.message;
@@ -116,7 +116,7 @@ export default function ProviderSignup() {
         setCaptchaToken(null);
       }
     } catch (err) {
-      captureError(err, { formData: sanitized });
+      captureError(err instanceof Error ? err : new Error(String(err)), { formData: sanitized });
       toast.error("Unexpected error. Please try again later.");
       if (recaptchaRef.current) recaptchaRef.current.reset();
       setCaptchaToken(null);

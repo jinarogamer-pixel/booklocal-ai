@@ -1,4 +1,6 @@
 // scripts/check-env.cjs
+require('dotenv').config({ path: '.env.local' });
+
 const mask = s => (!s ? '(empty)' : s.slice(0,8)+'…'+s.slice(-6));
 
 const keys = Object.keys(process.env).filter(k => k.includes('SUPABASE'));
@@ -13,5 +15,13 @@ console.log('[ENV] KEY value (masked):', mask(KEY));
 console.log('[ENV] URL looks like URL?', /^https?:\/\//.test(URL));
 console.log('[ENV] KEY looks like JWT?', KEY.startsWith('eyJ'));
 
-if (!/^https?:\/\//.test(URL) || !URL.includes('supabase.co')) throw new Error('BAD: URL');
-if (!KEY.startsWith('eyJ') || KEY.includes('http')) throw new Error('BAD: KEY');
+// Allow builds to continue without Supabase in development/preview
+if (process.env.VERCEL_ENV === 'production') {
+  if (!/^https?:\/\//.test(URL) || !URL.includes('supabase.co')) throw new Error('BAD: URL');
+  if (!KEY.startsWith('eyJ') || KEY.includes('http')) throw new Error('BAD: KEY');
+} else {
+  console.log('[ENV] Non-production environment, skipping strict validation');
+  if (!URL || !KEY) {
+    console.warn('[ENV] Warning: Supabase credentials missing - app will use mock data');
+  }
+}

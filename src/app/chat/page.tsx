@@ -1,17 +1,22 @@
 "use client";
-import { useState } from 'react';
-import dynamic from 'next/dynamic';
-const ChatWidget = dynamic(() => import('./ChatWidget'), { ssr: false });
+import nextDynamic from 'next/dynamic';
+
+// Force dynamic rendering for this page
+export const dynamic = 'force-dynamic';
+
+// Dynamic import to avoid SSR issues
+const ChatPageClient = nextDynamic(() => import('./ChatPageClient'), { 
+  ssr: false,
+  loading: () => (
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+        <p className="mt-4 text-gray-600">Loading chat...</p>
+      </div>
+    </div>
+  )
+});
 
 export default function ChatPage() {
-  const [messages, setMessages] = useState<{ from: string; text: string }[]>([]);
-  const [input, setInput] = useState('');
-
-  return (
-    <div className="glass-card" style={{ maxWidth: 700, margin: '3rem auto' }}>
-      <h1 className="hero-title mb-4">Chat & Messaging</h1>
-      <p className="mb-6">Communicate with your clients and manage conversations securely.</p>
-      <ChatWidget />
-    </div>
-  );
+  return <ChatPageClient />;
 }

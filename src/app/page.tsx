@@ -1,217 +1,30 @@
 "use client";
+import React from 'react';
+import dynamic from 'next/dynamic';
 
-
-import { useState, useEffect } from "react";
-import { getSupabase } from "../lib/supabaseClient";
-import Image from "next/image";
-import Link from "next/link";
-import { trackEvent } from "../lib/analytics";
-import { captureError } from "../lib/errorMonitoring";
-import AdvancedSearch from "./components/AdvancedSearch";
-import SearchResults, { SearchResult } from "./components/SearchResults";
-import { useNotification } from "./components/NotificationProvider";
-
-//** simple client FAQ accordion */
-function FAQ({ q, children }: { q: string; children: React.ReactNode }) {
-  const [open, setOpen] = useState(false);
-  function handleToggle() {
-    setOpen((v) => {
-      const next = !v;
-      if (next) trackEvent("faq_opened", { question: q });
-      return next;
-    });
-  }
-  return (
-    <div className="glass-card animate-fade-in-up">
-      <button
-        type="button"
-        className="flex w-full items-center justify-between px-4 py-3 text-left font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 rounded-lg"
-        onClick={handleToggle}
-        aria-expanded={open}
-        aria-controls={`faq-panel-${q.replace(/\s+/g, '-')}`}
-      >
-        <span>{q}</span>
-        <span className="text-neutral-400">{open ? "–" : "+"}</span>
-      </button>
-      {open && (
-        <div id={`faq-panel-${q.replace(/\s+/g, '-')}`} className="px-4 pb-4 text-sm text-neutral-300">
-          {children}
-        </div>
-      )}
+// Dynamic import with better error handling
+const PremiumLandingPage = dynamic(() => import('@/components/PremiumLandingPage').catch(() => {
+  // Fallback if premium component fails
+  return () => (
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 flex items-center justify-center">
+      <div className="text-center">
+        <h1 className="text-4xl font-bold text-white mb-4">BookLocal</h1>
+        <p className="text-gray-300">Loading platform...</p>
+      </div>
     </div>
   );
-}
-
-
-import { useRef } from "react";
+}), {
+  ssr: false,
+  loading: () => (
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 flex items-center justify-center">
+      <div className="text-center">
+        <div className="w-16 h-16 border-4 border-blue-400 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+        <p className="text-white text-lg">Loading BookLocal...</p>
+      </div>
+    </div>
+  )
+});
 
 export default function Home() {
-  const supabaseRef = useRef(getSupabase());
-  const supabase = supabaseRef.current;
-  // State for advanced search
-  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
-  const [searchLoading, setSearchLoading] = useState(false);
-  const [searchPerformed, setSearchPerformed] = useState(false);
-  const [activeFilters, setActiveFilters] = useState<Record<string, string>>({});
-  const [activeQuery, setActiveQuery] = useState("");
-
-  // State for project posting
-  const [projectForm, setProjectForm] = useState({
-    title: '',
-    description: '',
-    category: '',
-    location: '',
-    budgetMin: '',
-    budgetMax: '',
-    email: '',
-    phone: ''
-  });
-  const [projectLoading, setProjectLoading] = useState(false);
-  const [projectMsg, setProjectMsg] = useState<string | null>(null);
-
-  // State for waitlist
-  const [loading, setLoading] = useState(false);
-  const [msg, setMsg] = useState<string | null>(null);
-
-  const { showNotification } = useNotification();
-
-  // Project posting handler
-  async function onPostProject(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    setProjectLoading(true);
-    setProjectMsg(null);
-    try {
-      // Example: await supabase.from('projects').insert([{ ...projectForm }]);
-      setTimeout(() => {
-        setProjectMsg("Project posted! Local pros will reach out soon.");
-        setProjectForm({
-          title: '',
-          description: '',
-          category: '',
-          location: '',
-          budgetMin: '',
-          budgetMax: '',
-          email: '',
-          phone: ''
-        });
-        setProjectLoading(false);
-        trackEvent("project_post_success");
-      }, 1000);
-    } catch (err: unknown) {
-      setProjectMsg("Error posting project. Please try again.");
-      setProjectLoading(false);
-      captureError(err, { form: projectForm });
-      trackEvent("project_post_error");
-    }
-  }
-
-  // Waitlist join handler
-  async function onJoin(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    setLoading(true);
-    setMsg(null);
-
-    try {
-      const form = e.currentTarget;
-      const email = (form.elements.namedItem("email") as HTMLInputElement)?.value?.trim();
-
-      if (!email) {
-        setMsg("Please enter an email address.");
-        setLoading(false);
-        trackEvent("waitlist_join_validation_error");
-        return;
-      }
-
-      const { error } = await supabase.from("waitlist").insert([{ email }]);
-
-      if (error) {
-        setMsg(`Error: ${error.message}`);
-        captureError(error, { email });
-        trackEvent("waitlist_join_error");
-      } else {
-        setMsg("Thanks! You’re on the list — we’ll email you soon.");
-        form.reset();
-        trackEvent("waitlist_join_success");
-      }
-    } catch (err: unknown) {
-      setMsg("Unexpected error. Please try again later.");
-      if (err && typeof err === 'object' && 'message' in err) {
-        captureError((err as { message?: string }).message);
-      } else {
-        captureError(err);
-      }
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  // Advanced search handler (live Supabase search)
-  async function handleAdvancedSearch(query: string, filters: Record<string, string>) {
-    setSearchLoading(true);
-    setSearchPerformed(true);
-    setActiveFilters(filters);
-    setActiveQuery(query);
-    showNotification("info", `Searching for: ${query} ${filters.category ? `in ${filters.category}` : ''} ${filters.location ? `at ${filters.location}` : ''}`);
-    try {
-      let supa = supabase.from("providers").select("id,name,category,location,description");
-      if (query) supa = supa.ilike("name", `%${query}%`);
-      if (filters.category) supa = supa.eq("category", filters.category);
-      if (filters.location) supa = supa.ilike("location", `%${filters.location}%`);
-      const { data, error } = await supa.limit(20);
-      if (error) {
-        showNotification("error", "Search failed. Try again later.");
-        setSearchResults([]);
-      } else {
-        setSearchResults(data || []);
-        if (!data?.length) showNotification("info", "No results found.");
-      }
-    } catch (err: unknown) {
-      showNotification("error", "Unexpected error. Please try again later.");
-      setSearchResults([]);
-      if (err && typeof err === 'object' && 'message' in err) {
-        captureError((err as { message?: string }).message);
-      } else {
-        captureError(err);
-      }
-    } finally {
-      setSearchLoading(false);
-    }
-  }
-
-  // Real-time subscription for provider listings
-  useEffect(() => {
-    // Only subscribe if a search has been performed
-    if (!searchPerformed) return;
-    const unsubscribedRef = { current: false };
-    const channel = supabase.channel('realtime:providers')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'providers' }, async (payload) => {
-        if (unsubscribedRef.current) return;
-        try {
-          let supa = supabase.from("providers").select("id,name,category,location,description");
-          if (activeQuery) supa = supa.ilike("name", `%${activeQuery}%`);
-          if (activeFilters.category) supa = supa.eq("category", activeFilters.category);
-          if (activeFilters.location) supa = supa.ilike("location", `%${activeFilters.location}%`);
-          const { data, error } = await supa.limit(20);
-          if (!unsubscribedRef.current) setSearchResults(data || []);
-        } catch (err: unknown) {
-          if (!unsubscribedRef.current) showNotification("error", "Realtime update failed.");
-        }
-      })
-      .subscribe();
-    return () => {
-      unsubscribedRef.current = true;
-      supabase.removeChannel(channel);
-    };
-  }, [searchPerformed, activeQuery, activeFilters]);
-
-  return (
-    <div className="min-h-screen bg-neutral-950 text-neutral-50">
-      {/* Top Nav */}
-      {/* ...existing code... */}
-    </div>
-  );
+  return <PremiumLandingPage />;
 }
-
-
-
-

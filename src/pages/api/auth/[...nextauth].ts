@@ -1,7 +1,9 @@
-import NextAuth from 'next-auth';
+import NextAuth, { type NextAuthOptions, type Session } from 'next-auth';
 import GoogleProvider from 'next-auth/providers/google';
+import { withRateLimit } from '../../../lib/rate-limit';
+import type { NextApiRequest, NextApiResponse } from 'next';
 
-export const authOptions = {
+export const authOptions: NextAuthOptions = {
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID || '',
@@ -13,15 +15,35 @@ export const authOptions = {
     strategy: 'jwt',
   },
   callbacks: {
-    async session({ session, token }: any) {
-      // Attach minimal token info safely
+    async session({ session, token }): Promise<Session> {
       if (session && typeof session === 'object') {
-        (session as any).user = (session as any).user || {};
-        (session as any).user.id = token?.sub ?? (session as any).user.id;
+        const s = session as Session & Record<string, unknown>;
+        if (!('user' in s) || typeof s.user !== 'object') {
+          s.user = { id: undefined } as unknown as Session['user'];
+        }
+        const userObj = s.user as Record<string, unknown>;
+        if (token && typeof token === 'object' && 'sub' in (token as Record<string, unknown>)) {
+          userObj.id = (token as Record<string, unknown>).sub as string | undefined;
+        }
       }
-      return session;
+      return session as Session;
     },
   },
 };
 
-export default NextAuth(authOptions as any);
+// Rate limited NextAuth handler
+async function handler(req: NextApiRequest, res: NextApiResponse) {
+  // Rate limit auth requests (10 per minute)
+  const allowed = await withRateLimit(req, res, {
+    limit: 10,
+    windowSeconds: 60,
+  });
+
+  if (!allowed) {
+    return; // withRateLimit already sent the response
+  }
+
+  return NextAuth(authOptions)(req, res);
+}
+
+export default handler;

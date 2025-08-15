@@ -1,0 +1,28 @@
+psql:supabase/migrations/2025-08-14_enterprise_schema.sql:35: NOTICE:  relation "users" already exists, skipping
+CREATE TABLE
+psql:supabase/migrations/2025-08-14_enterprise_schema.sql:62: NOTICE:  relation "services" already exists, skipping
+CREATE TABLE
+psql:supabase/migrations/2025-08-14_enterprise_schema.sql:101: NOTICE:  relation "bookings" already exists, skipping
+CREATE TABLE
+psql:supabase/migrations/2025-08-14_enterprise_schema.sql:119: NOTICE:  relation "reviews" already exists, skipping
+CREATE TABLE
+psql:supabase/migrations/2025-08-14_enterprise_schema.sql:136: NOTICE:  relation "subscriptions" already exists, skipping
+CREATE TABLE
+psql:supabase/migrations/2025-08-14_enterprise_schema.sql:158: NOTICE:  relation "payments" already exists, skipping
+CREATE TABLE
+psql:supabase/migrations/2025-08-14_enterprise_schema.sql:185: NOTICE:  relation "audit_logs" already exists, skipping
+CREATE TABLE
+psql:supabase/migrations/2025-08-14_enterprise_schema.sql:198: NOTICE:  relation "data_retention" already exists, skipping
+CREATE TABLE
+psql:supabase/migrations/2025-08-14_enterprise_schema.sql:216: NOTICE:  relation "consent_records" already exists, skipping
+CREATE TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+psql:supabase/migrations/2025-08-14_enterprise_schema.sql:238: ERROR:  policy "Users can view own profile" for table "users" already exists

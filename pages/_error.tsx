@@ -13,15 +13,18 @@ CustomErrorComponent.getInitialProps = async (contextData: NextPageContext) => {
   // In case this is running in a serverless function, await this in order to give Sentry
   // time to send the error before the lambda exits
   // Use captureException if captureUnderscoreErrorException is not available
-  if (typeof Sentry.captureUnderscoreErrorException === 'function') {
-    // @ts-ignore - upstream Sentry helper may exist in runtime
-    await Sentry.captureUnderscoreErrorException(contextData as any);
+  const maybeSentry = Sentry as unknown as Record<string, unknown>;
+  const hasHelper = typeof maybeSentry.captureUnderscoreErrorException === 'function';
+
+  if (hasHelper) {
+    // call helper with a safe typed function signature
+    await (maybeSentry.captureUnderscoreErrorException as (arg: unknown) => Promise<void>)(contextData);
   } else if (typeof Sentry.captureException === 'function') {
-    Sentry.captureException(contextData as any);
+    Sentry.captureException(contextData as unknown as Error);
   }
 
   // This will contain the status code of the response
-  return Error.getInitialProps(contextData as any);
+  return Error.getInitialProps(contextData);
 };
 
 export default CustomErrorComponent;

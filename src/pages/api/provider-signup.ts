@@ -26,7 +26,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
   } catch (err) {
     // If rate limiter fails (no envs), allow to continue but log the error
-    await captureError(err, { ip, note: 'Rate limiter failed or not configured' });
+    await captureError(err instanceof Error ? err : new Error(String(err)), { ip, note: 'Rate limiter failed or not configured' });
   }
 
   // --- CAPTCHA verification (Google reCAPTCHA v2/v3) ---
@@ -42,7 +42,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(400).json({ error: 'CAPTCHA verification failed.' });
     }
   } catch (err) {
-    await captureError(err, { ip, captchaToken });
+    await captureError(err instanceof Error ? err : new Error(String(err)), { ip, captchaToken });
     return res.status(500).json({ error: 'CAPTCHA verification error.' });
   }
 
@@ -82,7 +82,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }]);
 
     if (error) {
-      await captureError(error, { sanitized });
+      await captureError(error instanceof Error ? error : new Error(String(error)), { sanitized });
       return res.status(500).json({ error: error.message });
     }
 
@@ -94,13 +94,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         html: `<p>Hi ${sanitized.name},</p><p>Thank you for applying to join BookLocal as a service provider! Our team will review your application and get back to you within 24 hours.</p><p>Best,<br/>BookLocal Team</p>`
       });
     } catch (err) {
-      await captureError(err, { email: sanitized.email });
+      await captureError(err instanceof Error ? err : new Error(String(err)), { email: sanitized.email });
       // Don't block success if email fails
     }
 
     return res.status(200).json({ success: true });
   } catch (err) {
-    await captureError(err, { reqBody: req.body });
+    await captureError(err instanceof Error ? err : new Error(String(err)), { reqBody: req.body });
     return res.status(500).json({ error: 'Unexpected error' });
   }
 }

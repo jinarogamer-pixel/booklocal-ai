@@ -234,13 +234,13 @@ ALTER TABLE consent_records ENABLE ROW LEVEL SECURITY;
 -- =============================================
 
 -- USERS POLICIES
-CREATE POLICY IF NOT EXISTS "Users can view own profile" ON users
+CREATE POLICY "Users can view own profile" ON users
   FOR SELECT USING (auth.uid() = id);
 
-CREATE POLICY IF NOT EXISTS "Users can update own profile" ON users
+CREATE POLICY "Users can update own profile" ON users
   FOR UPDATE USING (auth.uid() = id);
 
-CREATE POLICY IF NOT EXISTS "Admins can view all users" ON users
+CREATE POLICY "Admins can view all users" ON users
   FOR SELECT USING (
     EXISTS (
       SELECT 1 FROM users 
@@ -250,13 +250,13 @@ CREATE POLICY IF NOT EXISTS "Admins can view all users" ON users
   );
 
 -- SERVICES POLICIES
-CREATE POLICY IF NOT EXISTS "Anyone can view active services" ON services
+CREATE POLICY "Anyone can view active services" ON services
   FOR SELECT USING (is_active = true);
 
-CREATE POLICY IF NOT EXISTS "Providers can manage own services" ON services
+CREATE POLICY "Providers can manage own services" ON services
   FOR ALL USING (auth.uid() = provider_id);
 
-CREATE POLICY IF NOT EXISTS "Admins can manage all services" ON services
+CREATE POLICY "Admins can manage all services" ON services
   FOR ALL USING (
     EXISTS (
       SELECT 1 FROM users 
@@ -266,47 +266,47 @@ CREATE POLICY IF NOT EXISTS "Admins can manage all services" ON services
   );
 
 -- BOOKINGS POLICIES
-CREATE POLICY IF NOT EXISTS "Users can view own bookings" ON bookings
+CREATE POLICY "Users can view own bookings" ON bookings
   FOR SELECT USING (
     auth.uid() = user_id OR 
     auth.uid() = provider_id
   );
 
-CREATE POLICY IF NOT EXISTS "Users can create bookings" ON bookings
+CREATE POLICY "Users can create bookings" ON bookings
   FOR INSERT WITH CHECK (auth.uid() = user_id);
 
-CREATE POLICY IF NOT EXISTS "Participants can update bookings" ON bookings
+CREATE POLICY "Participants can update bookings" ON bookings
   FOR UPDATE USING (
     auth.uid() = user_id OR 
     auth.uid() = provider_id
   );
 
 -- REVIEWS POLICIES
-CREATE POLICY IF NOT EXISTS "Anyone can view reviews" ON reviews
+CREATE POLICY "Anyone can view reviews" ON reviews
   FOR SELECT USING (true);
 
-CREATE POLICY IF NOT EXISTS "Reviewers can create reviews" ON reviews
+CREATE POLICY "Reviewers can create reviews" ON reviews
   FOR INSERT WITH CHECK (auth.uid() = reviewer_id);
 
-CREATE POLICY IF NOT EXISTS "Reviewers can update own reviews" ON reviews
+CREATE POLICY "Reviewers can update own reviews" ON reviews
   FOR UPDATE USING (auth.uid() = reviewer_id);
 
 -- PAYMENTS POLICIES - Strict security
-CREATE POLICY IF NOT EXISTS "Users can view own payments" ON payments
+CREATE POLICY "Users can view own payments" ON payments
   FOR SELECT USING (auth.uid() = user_id);
 
-CREATE POLICY IF NOT EXISTS "No client payment modifications" ON payments
+CREATE POLICY "No client payment modifications" ON payments
   FOR INSERT WITH CHECK (false);
 
-CREATE POLICY IF NOT EXISTS "No client payment updates" ON payments
+CREATE POLICY "No client payment updates" ON payments
   FOR UPDATE USING (false);
 
 -- SUBSCRIPTIONS POLICIES
-CREATE POLICY IF NOT EXISTS "Users can view own subscriptions" ON subscriptions
+CREATE POLICY "Users can view own subscriptions" ON subscriptions
   FOR SELECT USING (auth.uid() = user_id);
 
 -- AUDIT LOGS POLICIES - Admin only
-CREATE POLICY IF NOT EXISTS "Admins can view audit logs" ON audit_logs
+CREATE POLICY "Admins can view audit logs" ON audit_logs
   FOR SELECT USING (
     EXISTS (
       SELECT 1 FROM users 
@@ -316,10 +316,10 @@ CREATE POLICY IF NOT EXISTS "Admins can view audit logs" ON audit_logs
   );
 
 -- CONSENT RECORDS POLICIES
-CREATE POLICY IF NOT EXISTS "Users can view own consent records" ON consent_records
+CREATE POLICY "Users can view own consent records" ON consent_records
   FOR SELECT USING (auth.uid() = user_id);
 
-CREATE POLICY IF NOT EXISTS "Users can create consent records" ON consent_records
+CREATE POLICY "Users can create consent records" ON consent_records
   FOR INSERT WITH CHECK (auth.uid() = user_id);
 
 -- =============================================

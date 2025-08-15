@@ -1,6 +1,7 @@
 // API route: /api/log-error
 // Receives error reports from captureError and forwards to Sentry or logs to console
 import type { NextApiRequest, NextApiResponse } from 'next';
+import { withRateLimit } from '../../lib/rate-limit';
 
 // 1. Integrate with Sentry backend (uncomment and configure as needed)
 // import * as Sentry from '@sentry/node';
@@ -12,6 +13,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
+
+  // Rate limit error logging (20 per minute to prevent spam)
+  const allowed = await withRateLimit(req, res, {
+    limit: 20,
+    windowSeconds: 60,
+    identifier: 'error-logging',
+  });
+
+  if (!allowed) {
+    return; // withRateLimit already sent the response
+  }
+
   const { error, context, env, timestamp, fingerprint } = req.body || {};
   const eventId: string | undefined = undefined;
   try {

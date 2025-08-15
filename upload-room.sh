@@ -1,0 +1,38 @@
+#!/bin/bash
+echo "📦 BookLocal Room Model Upload Helper"
+echo "======================================"
+echo ""
+echo "This script helps you upload your room.glb file to the correct location."
+echo ""
+echo "Current status:"
+echo "- Models directory: /Users/molmecarl/booklocal-ai/public/models/"
+echo "- Expected file: room.glb"
+echo ""
+
+if [ -f "/Users/molmecarl/booklocal-ai/public/models/room.glb" ]; then
+    echo "✅ room.glb exists!"
+    echo "File size: $(du -h /Users/molmecarl/booklocal-ai/public/models/room.glb | cut -f1)"
+    echo "Last modified: $(stat -f "%Sm" -t "%Y-%m-%d %H:%M:%S" /Users/molmecarl/booklocal-ai/public/models/room.glb)"
+else
+    echo "❌ room.glb not found"
+    echo ""
+    echo "To upload your room.glb file:"
+    echo "1. Copy your room.glb file"
+    echo "2. Paste it into: /Users/molmecarl/booklocal-ai/public/models/"
+    echo "3. Make sure it's named exactly 'room.glb'"
+    echo ""
+    echo "Or run:"
+    echo "cp /path/to/your/room.glb /Users/molmecarl/booklocal-ai/public/models/room.glb"
+fi
+
+echo ""
+echo "🎯 Material Detection Guide:"
+echo "Your room.glb should have materials named with these patterns:"
+echo "- Floor materials: 'floor', 'ground', 'flooring' in the name"
+echo "- Wall materials: 'wall', 'ceiling' in the name"  
+echo "- Sofa materials: 'sofa', 'couch', 'furniture' in the name"
+echo ""
+echo "Example material names:"
+echo "- 'HardwoodFloor'"
+echo "- 'LivingRoomWall'"
+echo "- 'LeatherSofa'"

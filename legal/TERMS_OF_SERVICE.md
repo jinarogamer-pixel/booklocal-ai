@@ -6,16 +6,16 @@
 
 ---
 
-## NOTICE TO CALIFORNIA RESIDENTS
+## NOTICE TO FLORIDA RESIDENTS
 
-These Terms of Service are governed by California law and comply with all applicable California consumer protection statutes, including but not limited to the California Consumer Privacy Act (CCPA), the Unruh Civil Rights Act, and California Civil Code Section 1798 et seq. Additional protections for California residents are detailed in Section 23 below.
+These Terms of Service are governed by Florida law and comply with all applicable Florida consumer protection statutes, including but not limited to the Florida Deceptive and Unfair Trade Practices Act (FDUTPA), Florida's Home Improvement Finance Act, and Florida Statutes Chapter 489 (Contracting). Additional protections for Florida residents are detailed in Section 23 below.
 
 ---
 
 ## 1. ACCEPTANCE OF TERMS AND BINDING AGREEMENT
 
 ### 1.1 Agreement Formation
-By accessing, browsing, or using the BookLocal platform (the "Platform"), mobile applications, websites, or any related services (collectively, the "Services"), you ("User," "you," or "your") enter into a legally binding contract with BookLocal, Inc., a Delaware corporation with principal offices in California ("BookLocal," "Company," "we," "us," or "our").
+By accessing, browsing, or using the BookLocal platform (the "Platform"), mobile applications, websites, or any related services (collectively, the "Services"), you ("User," "you," or "your") enter into a legally binding contract with BookLocal, Inc., a Florida corporation with principal offices in Florida ("BookLocal," "Company," "we," "us," or "our").
 
 ### 1.2 Legal Capacity and Authority
 You represent and warrant that you: (a) are at least 18 years of age or the age of majority in your jurisdiction; (b) have the legal capacity and authority to enter into this Agreement; (c) if representing an entity, have the authority to bind such entity to these Terms; and (d) are not prohibited from using the Services under applicable law.
@@ -38,7 +38,7 @@ You consent to the use of electronic signatures, contracts, orders, and other re
 - **"Transaction"** means any booking, payment, or service arrangement facilitated through the Platform
 
 ### 2.2 Interpretation Rules
-These Terms shall be interpreted according to California law without regard to conflict of law principles. Headings are for convenience only and do not affect interpretation.
+These Terms shall be interpreted according to Florida law without regard to conflict of law principles. Headings are for convenience only and do not affect interpretation.
 
 ---
 

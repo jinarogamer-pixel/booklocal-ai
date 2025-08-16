@@ -2,6 +2,9 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Import Enterprise CSS System */
+@import '../styles/enterprise.css';
+
 /* Dark mode toggle button */
 .dark-toggle {
   position: fixed;

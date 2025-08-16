@@ -14,6 +14,7 @@ import {
 import ShaderBg from "./ShaderBg";
 import ThreeHero from "./ThreeHero";
 import CaseStudy from "./CaseStudy";
+import EnterpriseHeroSection from "./EnterpriseHeroSection";
 import MagneticButton from "./MagneticButton";
 import PostProjectPanel from "./PostProjectPanel";
 import FinishSwap from "./FinishSwap";
@@ -756,144 +757,8 @@ const PremiumLandingPage = () => {
         </div>
       </motion.nav>
 
-      {/* Revolutionary Hero Section */}
-      <motion.section
-        style={{ y: heroY, opacity: heroOpacity }}
-        className="relative z-10 px-6 pt-20 pb-40"
-      >
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-20">
-            
-            {/* Premium Badge */}
-            <motion.div
-              initial={{ scale: 0, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ duration: 0.8, delay: 0.3 }}
-              className="inline-flex items-center space-x-4 premium-glass rounded-full px-10 py-5 mb-20 shadow-2xl"
-            >
-              <Award className="w-7 h-7 text-blue-300" />
-              <span className="text-white font-bold text-xl tracking-wide">Trusted by 50,000+ Professionals • 99.7% Success Rate</span>
-              <motion.div
-                animate={{ scale: [1, 1.3, 1], opacity: [0.7, 1, 0.7] }}
-                transition={{ duration: 2, repeat: Infinity }}
-                className="w-4 h-4 bg-green-400 rounded-full shadow-lg shadow-green-400/50"
-              />
-            </motion.div>
-
-            {/* Hero Typography */}
-            <motion.div
-              initial={{ opacity: 0, y: 50 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 1, delay: 0.5 }}
-              className="mb-16"
-            >
-              <h1 className="hero-title text-6xl md:text-8xl lg:text-9xl font-black leading-tight mb-12">
-                <motion.span
-                  className="block bg-gradient-to-r from-white via-blue-100 to-purple-100 bg-clip-text text-transparent"
-                  initial={{ opacity: 0, y: 100 }}
-                  animate={{ 
-                    opacity: 1, 
-                    y: 0,
-                    backgroundPosition: ['0% 50%', '100% 50%', '0% 50%']
-                  }}
-                  transition={{ 
-                    opacity: { duration: 1, delay: 0.8 },
-                    y: { duration: 1, delay: 0.8 },
-                    backgroundPosition: { duration: 8, repeat: Infinity }
-                  }}
-                >
-                  Professional
-                </motion.span>
-                <motion.span
-                  className="block bg-gradient-to-r from-blue-400 via-purple-400 to-cyan-400 bg-clip-text text-transparent"
-                  initial={{ opacity: 0, y: 100 }}
-                  animate={{ 
-                    opacity: 1, 
-                    y: 0,
-                    backgroundPosition: ['0% 50%', '100% 50%', '0% 50%']
-                  }}
-                  transition={{ 
-                    opacity: { duration: 1, delay: 1 },
-                    y: { duration: 1, delay: 1 },
-                    backgroundPosition: { duration: 8, repeat: Infinity, delay: 0.5 }
-                  }}
-                >
-                  Services
-                </motion.span>
-                <motion.span
-                  className="block bg-gradient-to-r from-cyan-400 via-blue-400 to-purple-400 bg-clip-text text-transparent"
-                  initial={{ opacity: 0, y: 100 }}
-                  animate={{ 
-                    opacity: 1, 
-                    y: 0,
-                    backgroundPosition: ['0% 50%', '100% 50%', '0% 50%']
-                  }}
-                  transition={{ 
-                    opacity: { duration: 1, delay: 1.2 },
-                    y: { duration: 1, delay: 1.2 },
-                    backgroundPosition: { duration: 8, repeat: Infinity, delay: 1 }
-                  }}
-                >
-                  Redefined
-                </motion.span>
-              </h1>
-              
-              <motion.div
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.8, delay: 1.4 }}
-                className="premium-glass rounded-3xl p-10 max-w-6xl mx-auto shadow-2xl"
-              >
-                <p className="text-xl md:text-2xl lg:text-3xl text-white/95 leading-relaxed font-light tracking-wide">
-                  Connect with vetted professionals instantly. From home repairs to enterprise solutions, 
-                  our AI-powered platform delivers <span className="font-semibold text-blue-300">exceptional service</span> with 
-                  <span className="font-semibold text-purple-300"> guaranteed results</span>.
-                </p>
-              </motion.div>
-            </motion.div>
-
-            {/* Premium CTA Section */}
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 1.2 }}
-              className="flex flex-col lg:flex-row items-center justify-center space-y-8 lg:space-y-0 lg:space-x-12"
-            >
-              <motion.button
-                whileHover={{ scale: 1.05, boxShadow: "0 20px 40px rgba(59, 130, 246, 0.4)" }}
-                whileTap={{ scale: 0.95 }}
-                className="group relative bg-gradient-to-r from-blue-500 via-purple-500 to-cyan-500 px-12 py-6 rounded-3xl text-2xl font-bold shadow-2xl transition-all duration-500"
-              >
-                <span className="relative z-10 flex items-center text-white">
-                  Start Enterprise Trial
-                  <motion.div
-                    animate={{ x: [0, 5, 0] }}
-                    transition={{ duration: 1.5, repeat: Infinity }}
-                  >
-                    <ArrowRight className="ml-4 w-7 h-7" />
-                  </motion.div>
-                </span>
-              </motion.button>
-              
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                className="group flex items-center space-x-6 text-white/80 hover:text-white transition-all duration-300"
-              >
-                <motion.div
-                  whileHover={{ scale: 1.1 }}
-                  className="w-20 h-20 bg-white/10 backdrop-blur-2xl border border-white/20 rounded-3xl flex items-center justify-center shadow-2xl group-hover:bg-white/20 transition-all duration-300"
-                >
-                  <Play className="w-9 h-9 ml-2" />
-                </motion.div>
-                <div className="text-left">
-                  <div className="text-xl font-bold">Watch Platform Demo</div>
-                  <div className="text-white/60">See enterprise features in action</div>
-                </div>
-              </motion.button>
-            </motion.div>
-          </div>
-        </div>
-      </motion.section>
+      {/* Enterprise Hero Section */}
+      <EnterpriseHeroSection />
 
       {/* Shader Background Enhancement */}
       <ShaderBg />

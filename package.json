@@ -7,7 +7,21 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "test:staging": "npm run test -- --testPathPattern=staging",
+    "test:e2e": "cypress run",
+    "test:e2e:open": "cypress open",
+    "security:audit": "npm audit && node scripts/security-audit.js",
+    "deploy:staging": "bash scripts/deploy-production.sh staging",
+    "deploy:production": "bash scripts/deploy-production.sh production",
+    "docker:build": "docker build -f infrastructure/Dockerfile.prod -t booklocal:latest .",
+    "docker:run": "docker-compose -f infrastructure/docker-compose.prod.yml up",
+    "monitoring:start": "docker-compose -f infrastructure/docker-compose.monitoring.yml up -d",
+    "backup:create": "node scripts/backup-database.js",
+    "backup:restore": "node scripts/restore-database.js"
   },
   "dependencies": {
     "@gsap/react": "^2.1.2",
@@ -18,6 +32,7 @@
     "@stripe/stripe-js": "^7.8.0",
     "@supabase/storage-js": "^2.10.4",
     "@supabase/supabase-js": "^2.54.0",
+    "@supabase/auth-helpers-nextjs": "^0.10.0",
     "@types/speakeasy": "^2.0.10",
     "@upstash/redis": "^1.35.3",
     "@vercel/speed-insights": "^1.2.0",
@@ -46,7 +61,49 @@
     "speakeasy": "^2.0.0",
     "stripe": "^18.4.0",
     "three": "^0.179.1",
-    "zod": "^4.0.17"
+    "zod": "^4.0.17",
+    "braintree": "^3.24.0",
+    "@adyen/api-library": "^14.0.0",
+    "squareup": "^28.0.0",
+    "prom-client": "^15.1.0",
+    "winston": "^3.11.0",
+    "winston-elasticsearch": "^0.17.4",
+    "helmet": "^7.1.0",
+    "express-rate-limit": "^7.1.5",
+    "express-slow-down": "^2.0.1",
+    "bcryptjs": "^2.4.3",
+    "crypto-js": "^4.2.0",
+    "node-cron": "^3.0.3",
+    "nodemailer": "^6.9.8",
+    "sharp": "^0.33.2",
+    "multer": "^1.4.5-lts.1",
+    "file-type": "^19.0.0",
+    "compression": "^1.7.4",
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "express-validator": "^7.0.1",
+    "joi": "^17.12.0",
+    "moment": "^2.30.1",
+    "uuid": "^9.0.1",
+    "lodash": "^4.17.21",
+    "axios": "^1.6.7",
+    "cheerio": "^1.0.0-rc.12",
+    "puppeteer": "^21.11.0",
+    "playwright": "^1.41.2",
+    "pdf-lib": "^1.17.1",
+    "canvas": "^2.11.2",
+    "jimp": "^0.22.10",
+    "geoip-lite": "^1.4.10",
+    "user-agents": "^1.1.21",
+    "rate-limiter-flexible": "^4.0.1",
+    "express-brute": "^1.0.1",
+    "express-brute-redis": "^0.0.1",
+    "redis": "^4.6.12",
+    "ioredis": "^5.3.2",
+    "bull": "^4.12.2",
+    "agenda": "^5.0.0",
+    "node-schedule": "^2.1.1",
+    "cron": "^3.1.6"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
@@ -71,6 +128,86 @@
     "supabase": "^2.34.3",
     "tailwindcss": "^4",
     "ts-jest": "^29.4.1",
-    "typescript": "^5"
+    "typescript": "^5",
+    "@types/braintree": "^3.3.11",
+    "@types/bcryptjs": "^2.4.6",
+    "@types/crypto-js": "^4.2.2",
+    "@types/node-cron": "^3.0.11",
+    "@types/nodemailer": "^6.4.14",
+    "@types/multer": "^1.4.11",
+    "@types/compression": "^1.7.5",
+    "@types/cors": "^2.8.17",
+    "@types/express": "^4.17.21",
+    "@types/moment": "^2.13.0",
+    "@types/uuid": "^9.0.8",
+    "@types/lodash": "^4.14.202",
+    "@types/cheerio": "^0.22.35",
+    "@types/geoip-lite": "^1.4.4",
+    "@types/user-agents": "^1.0.4",
+    "@types/bull": "^4.10.0",
+    "supertest": "^6.3.4",
+    "nock": "^13.5.1",
+    "msw": "^2.1.5",
+    "@faker-js/faker": "^8.4.0",
+    "artillery": "^2.0.4",
+    "lighthouse": "^11.4.0",
+    "pa11y": "^8.0.0",
+    "axe-core": "^4.8.3",
+    "eslint-plugin-security": "^2.1.0",
+    "eslint-plugin-no-secrets": "^0.8.9",
+    "bandit": "^2.0.0",
+    "snyk": "^1.1275.0",
+    "audit-ci": "^6.6.1",
+    "dependency-check": "^4.1.0",
+    "retire": "^4.0.4",
+    "docker-compose": "^0.24.8",
+    "concurrently": "^8.2.2",
+    "cross-env": "^7.0.3",
+    "husky": "^9.0.10",
+    "lint-staged": "^15.2.1",
+    "prettier": "^3.2.5",
+    "commitizen": "^4.3.0",
+    "semantic-release": "^23.0.2"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "lint-staged && npm run security:audit",
+      "pre-push": "npm test"
+    }
+  },
+  "lint-staged": {
+    "*.{js,jsx,ts,tsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,md,yml,yaml}": [
+      "prettier --write"
+    ]
+  },
+  "jest": {
+    "preset": "ts-jest",
+    "testEnvironment": "jsdom",
+    "setupFilesAfterEnv": ["<rootDir>/jest.setup.js"],
+    "testPathIgnorePatterns": ["<rootDir>/.next/", "<rootDir>/node_modules/"],
+    "moduleNameMapping": {
+      "^@/(.*)$": "<rootDir>/src/$1"
+    },
+    "collectCoverageFrom": [
+      "src/**/*.{js,jsx,ts,tsx}",
+      "!src/**/*.d.ts",
+      "!src/**/*.stories.{js,jsx,ts,tsx}"
+    ],
+    "coverageThreshold": {
+      "global": {
+        "branches": 80,
+        "functions": 80,
+        "lines": 80,
+        "statements": 80
+      }
+    }
   }
 }

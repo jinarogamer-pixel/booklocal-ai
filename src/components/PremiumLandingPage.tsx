@@ -45,7 +45,12 @@ const hideNavigationCSS = `
   .dark-mode-toggle { display: none !important; }
   .fixed.inset-x-0.bottom-0 { display: none !important; }
   .fixed[style*="bottom"] { display: none !important; }
-  body { margin: 0 !important; padding: 0 !important; overflow-x: hidden !important; }
+  body { 
+    margin: 0 !important; 
+    padding: 0 !important; 
+    overflow-x: hidden !important;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important;
+  }
   html, body { height: 100% !important; }
   #__next { margin: 0 !important; padding: 0 !important; min-height: 100vh !important; }
   main { margin: 0 !important; padding: 0 !important; }
@@ -54,6 +59,31 @@ const hideNavigationCSS = `
   /* Hide cookie banner more aggressively */
   div[class*="fixed"][class*="bottom"] { display: none !important; }
   div[class*="bg-black"] { display: none !important; }
+  
+  /* Premium typography and spacing */
+  .hero-title {
+    font-weight: 900 !important;
+    letter-spacing: -0.05em !important;
+    line-height: 0.9 !important;
+  }
+  
+  .premium-glass {
+    backdrop-filter: blur(40px) !important;
+    background: rgba(255, 255, 255, 0.08) !important;
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+    box-shadow: 
+      0 8px 32px rgba(0, 0, 0, 0.12),
+      inset 0 1px 0 rgba(255, 255, 255, 0.15) !important;
+  }
+  
+  .studio-gradient {
+    background: linear-gradient(135deg, 
+      rgba(15, 23, 42, 0.95) 0%,
+      rgba(30, 41, 59, 0.9) 25%,
+      rgba(51, 65, 85, 0.85) 50%,
+      rgba(30, 58, 138, 0.9) 75%,
+      rgba(67, 56, 202, 0.95) 100%) !important;
+  }
 `;
 
 const PremiumLandingPage = () => {
@@ -625,7 +655,7 @@ const PremiumLandingPage = () => {
   return (
     <div 
       ref={containerRef} 
-      className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-purple-900 text-white overflow-hidden"
+      className="min-h-screen studio-gradient text-white overflow-hidden"
       style={{
         position: 'fixed',
         top: 0,
@@ -670,7 +700,7 @@ const PremiumLandingPage = () => {
         className="relative z-50 px-6 py-6"
       >
         <div className="max-w-7xl mx-auto">
-          <div className="bg-white/10 backdrop-blur-2xl border border-white/20 rounded-3xl px-8 py-4 shadow-2xl">
+          <div className="premium-glass rounded-3xl px-8 py-4 shadow-2xl">
             <div className="flex items-center justify-between">
               <motion.div
                 whileHover={{ scale: 1.05 }}
@@ -739,14 +769,14 @@ const PremiumLandingPage = () => {
               initial={{ scale: 0, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               transition={{ duration: 0.8, delay: 0.3 }}
-              className="inline-flex items-center space-x-4 bg-gradient-to-r from-blue-500/20 via-purple-500/20 to-cyan-500/20 backdrop-blur-2xl border border-white/30 rounded-full px-8 py-4 mb-16 shadow-2xl"
+              className="inline-flex items-center space-x-4 premium-glass rounded-full px-10 py-5 mb-20 shadow-2xl"
             >
-              <Award className="w-6 h-6 text-blue-300" />
-              <span className="text-white font-bold text-lg">Enterprise-Grade Platform • 10M+ Transactions</span>
+              <Award className="w-7 h-7 text-blue-300" />
+              <span className="text-white font-bold text-xl tracking-wide">Trusted by 50,000+ Professionals • 99.7% Success Rate</span>
               <motion.div
-                animate={{ scale: [1, 1.2, 1] }}
+                animate={{ scale: [1, 1.3, 1], opacity: [0.7, 1, 0.7] }}
                 transition={{ duration: 2, repeat: Infinity }}
-                className="w-3 h-3 bg-green-400 rounded-full"
+                className="w-4 h-4 bg-green-400 rounded-full shadow-lg shadow-green-400/50"
               />
             </motion.div>
 
@@ -757,45 +787,67 @@ const PremiumLandingPage = () => {
               transition={{ duration: 1, delay: 0.5 }}
               className="mb-16"
             >
-              <h1 className="text-7xl md:text-9xl font-black leading-tight mb-8">
+              <h1 className="hero-title text-6xl md:text-8xl lg:text-9xl font-black leading-tight mb-12">
                 <motion.span
                   className="block bg-gradient-to-r from-white via-blue-100 to-purple-100 bg-clip-text text-transparent"
+                  initial={{ opacity: 0, y: 100 }}
                   animate={{ 
+                    opacity: 1, 
+                    y: 0,
                     backgroundPosition: ['0% 50%', '100% 50%', '0% 50%']
                   }}
-                  transition={{ duration: 5, repeat: Infinity }}
-                >
-                  Enterprise
-                </motion.span>
-                <motion.span
-                  className="block bg-gradient-to-r from-blue-400 via-purple-400 to-cyan-400 bg-clip-text text-transparent"
-                  animate={{ 
-                    backgroundPosition: ['0% 50%', '100% 50%', '0% 50%']
+                  transition={{ 
+                    opacity: { duration: 1, delay: 0.8 },
+                    y: { duration: 1, delay: 0.8 },
+                    backgroundPosition: { duration: 8, repeat: Infinity }
                   }}
-                  transition={{ duration: 5, repeat: Infinity, delay: 0.5 }}
                 >
                   Professional
                 </motion.span>
                 <motion.span
-                  className="block bg-gradient-to-r from-cyan-400 via-blue-400 to-purple-400 bg-clip-text text-transparent"
+                  className="block bg-gradient-to-r from-blue-400 via-purple-400 to-cyan-400 bg-clip-text text-transparent"
+                  initial={{ opacity: 0, y: 100 }}
                   animate={{ 
+                    opacity: 1, 
+                    y: 0,
                     backgroundPosition: ['0% 50%', '100% 50%', '0% 50%']
                   }}
-                  transition={{ duration: 5, repeat: Infinity, delay: 1 }}
+                  transition={{ 
+                    opacity: { duration: 1, delay: 1 },
+                    y: { duration: 1, delay: 1 },
+                    backgroundPosition: { duration: 8, repeat: Infinity, delay: 0.5 }
+                  }}
                 >
-                  Platform
+                  Services
+                </motion.span>
+                <motion.span
+                  className="block bg-gradient-to-r from-cyan-400 via-blue-400 to-purple-400 bg-clip-text text-transparent"
+                  initial={{ opacity: 0, y: 100 }}
+                  animate={{ 
+                    opacity: 1, 
+                    y: 0,
+                    backgroundPosition: ['0% 50%', '100% 50%', '0% 50%']
+                  }}
+                  transition={{ 
+                    opacity: { duration: 1, delay: 1.2 },
+                    y: { duration: 1, delay: 1.2 },
+                    backgroundPosition: { duration: 8, repeat: Infinity, delay: 1 }
+                  }}
+                >
+                  Redefined
                 </motion.span>
               </h1>
               
               <motion.div
                 initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.8, delay: 1 }}
-                className="bg-white/10 backdrop-blur-2xl border border-white/20 rounded-3xl p-8 max-w-5xl mx-auto shadow-2xl"
+                transition={{ duration: 0.8, delay: 1.4 }}
+                className="premium-glass rounded-3xl p-10 max-w-6xl mx-auto shadow-2xl"
               >
-                <p className="text-2xl md:text-3xl text-white/90 leading-relaxed font-light">
-                  AI-powered service marketplace with enterprise-grade security, 
-                  real-time analytics, and global scalability. Trusted by Fortune 500 companies.
+                <p className="text-xl md:text-2xl lg:text-3xl text-white/95 leading-relaxed font-light tracking-wide">
+                  Connect with vetted professionals instantly. From home repairs to enterprise solutions, 
+                  our AI-powered platform delivers <span className="font-semibold text-blue-300">exceptional service</span> with 
+                  <span className="font-semibold text-purple-300"> guaranteed results</span>.
                 </p>
               </motion.div>
             </motion.div>
@@ -847,31 +899,77 @@ const PremiumLandingPage = () => {
       <ShaderBg />
       
       {/* 3D Interactive Hero */}
-      <section className="relative z-10 px-6 py-20 mb-20">
+      <section className="relative z-10 px-6 py-32 mb-32">
         <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-6xl font-black text-white mb-8">
-              Experience the <span className="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">Future</span>
+          <motion.div 
+            className="text-center mb-20"
+            initial={{ opacity: 0, y: 50 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 1 }}
+          >
+            <h2 className="hero-title text-5xl md:text-7xl lg:text-8xl font-black text-white mb-12">
+              Experience the{" "}
+              <span className="bg-gradient-to-r from-blue-400 via-purple-400 to-cyan-400 bg-clip-text text-transparent">
+                Future
+              </span>
+              <br />
+              <span className="text-4xl md:text-5xl lg:text-6xl bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">
+                of Professional Services
+              </span>
             </h2>
-            <div className="flex justify-center mb-8">
+            
+            <motion.div 
+              className="flex justify-center mb-12"
+              initial={{ opacity: 0, scale: 0.8 }}
+              whileInView={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.8, delay: 0.3 }}
+            >
               <TrustMeter />
-            </div>
-            <div className="flex items-center justify-center gap-4 flex-wrap mb-8">
+            </motion.div>
+            
+            <motion.div 
+              className="flex items-center justify-center gap-6 flex-wrap mb-16"
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.5 }}
+            >
               <MagneticButton onClick={() => window.dispatchEvent(new Event("openPostPanel"))}>
-                Post a Project
+                <span className="flex items-center space-x-2">
+                  <Briefcase className="w-5 h-5" />
+                  <span>Post a Project</span>
+                </span>
               </MagneticButton>
               <MagneticButton onClick={() => setIsSearchOpen(true)}>
-                Advanced Search
+                <span className="flex items-center space-x-2">
+                  <Search className="w-5 h-5" />
+                  <span>Find Professionals</span>
+                </span>
               </MagneticButton>
               <FinishSwap />
-            </div>
+            </motion.div>
             
             {/* Provider display for selected materials */}
-            <div className="max-w-2xl mx-auto">
+            <motion.div 
+              className="max-w-3xl mx-auto"
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.7 }}
+            >
               <ProviderDisplay />
+            </motion.div>
+          </motion.div>
+          
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 1, delay: 0.2 }}
+            className="relative"
+          >
+            <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 via-purple-500/20 to-cyan-500/20 rounded-3xl blur-3xl"></div>
+            <div className="relative premium-glass rounded-3xl p-8 overflow-hidden">
+              <ThreeHero onStep={(step: number) => {}} />
             </div>
-          </div>
-          <ThreeHero onStep={(step: number) => {}} />
+          </motion.div>
         </div>
       </section>
       
@@ -935,57 +1033,82 @@ const PremiumLandingPage = () => {
             transition={{ duration: 1 }}
             className="text-center mb-16"
           >
-            <h2 className="text-5xl md:text-7xl font-black text-white mb-8">
-              Enterprise <span className="bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">Features</span>
+            <h2 className="hero-title text-5xl md:text-7xl font-black text-white mb-8">
+              Why Choose <span className="bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">BookLocal</span>
             </h2>
+            <p className="text-xl md:text-2xl text-white/80 max-w-4xl mx-auto leading-relaxed">
+              Experience the difference with our premium platform designed for both homeowners and professionals.
+            </p>
           </motion.div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             {[
               {
                 icon: Shield,
-                title: "Enterprise Security",
-                description: "SOC 2 Type II certified with end-to-end encryption and advanced threat protection.",
-                color: "from-blue-400 to-blue-600"
+                title: "Verified Professionals",
+                description: "Background-checked, licensed, and insured professionals with verified reviews and ratings.",
+                color: "from-blue-400 to-blue-600",
+                metric: "100% Verified"
               },
               {
                 icon: BarChart3,
-                title: "Real-time Analytics",
-                description: "Advanced business intelligence with predictive analytics and custom dashboards.",
-                color: "from-green-400 to-green-600"
+                title: "Smart Matching",
+                description: "AI-powered matching system that connects you with the perfect professional for your specific needs.",
+                color: "from-green-400 to-green-600",
+                metric: "99.7% Match Rate"
               },
               {
                 icon: Cpu,
-                title: "AI-Powered Matching",
-                description: "Machine learning algorithms with 99.7% accuracy for optimal professional matching.",
-                color: "from-purple-400 to-purple-600"
+                title: "Instant Quotes",
+                description: "Get accurate price estimates instantly using our advanced AI pricing algorithms.",
+                color: "from-purple-400 to-purple-600",
+                metric: "< 30 Seconds"
               },
               {
                 icon: Globe2,
-                title: "Global Scalability",
-                description: "Multi-region deployment with 99.99% uptime and automatic scaling capabilities.",
-                color: "from-cyan-400 to-cyan-600"
+                title: "Nationwide Coverage",
+                description: "Access to thousands of professionals across all major cities and service categories.",
+                color: "from-cyan-400 to-cyan-600",
+                metric: "50+ Cities"
               },
               {
                 icon: Zap,
-                title: "API-First Platform",
-                description: "RESTful APIs and webhooks for seamless integration with existing enterprise systems.",
-                color: "from-yellow-400 to-orange-600"
+                title: "Same-Day Service",
+                description: "Many professionals available for same-day or emergency service requests.",
+                color: "from-yellow-400 to-orange-600",
+                metric: "24/7 Available"
               },
               {
                 icon: Users,
-                title: "Enterprise Support",
-                description: "24/7 dedicated support with custom SLAs and white-glove onboarding.",
-                color: "from-pink-400 to-pink-600"
+                title: "Satisfaction Guarantee",
+                description: "Money-back guarantee with our comprehensive protection and dispute resolution system.",
+                color: "from-pink-400 to-pink-600",
+                metric: "100% Protected"
               }
             ].map((feature, index) => (
               <Premium3DCard key={index} index={index}>
-                <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-8 h-full hover:bg-white/15 transition-all duration-500">
-                  <div className={`w-16 h-16 bg-gradient-to-br ${feature.color} rounded-2xl flex items-center justify-center mb-6 shadow-lg`}>
-                    <feature.icon className="w-8 h-8 text-white" />
+                <div className="premium-glass rounded-2xl p-8 h-full hover:bg-white/15 transition-all duration-500 group">
+                  <div className="flex items-start justify-between mb-6">
+                    <div className={`w-16 h-16 bg-gradient-to-br ${feature.color} rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300`}>
+                      <feature.icon className="w-8 h-8 text-white" />
+                    </div>
+                    <div className="text-right">
+                      <div className="text-sm font-semibold text-white/60 uppercase tracking-wider">Metric</div>
+                      <div className="text-lg font-bold text-white">{feature.metric}</div>
+                    </div>
                   </div>
-                  <h3 className="text-2xl font-bold text-white mb-4">{feature.title}</h3>
-                  <p className="text-white/70 leading-relaxed">{feature.description}</p>
+                  <h3 className="text-2xl font-bold text-white mb-4 group-hover:text-blue-300 transition-colors duration-300">{feature.title}</h3>
+                  <p className="text-white/80 leading-relaxed text-lg">{feature.description}</p>
+                  
+                  {/* Progress bar */}
+                  <div className="mt-6">
+                    <motion.div
+                      initial={{ width: 0 }}
+                      whileInView={{ width: "100%" }}
+                      transition={{ duration: 2, delay: index * 0.2 }}
+                      className={`h-1 bg-gradient-to-r ${feature.color} rounded-full`}
+                    />
+                  </div>
                 </div>
               </Premium3DCard>
             ))}
@@ -1000,31 +1123,68 @@ const PremiumLandingPage = () => {
             initial={{ opacity: 0, y: 50 }}
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 1 }}
-            className="bg-white/10 backdrop-blur-2xl border border-white/20 rounded-3xl p-16 shadow-2xl"
+            className="premium-glass rounded-3xl p-16 shadow-2xl relative overflow-hidden"
           >
-            <h2 className="text-5xl md:text-7xl font-black text-white mb-8">
-              Ready for <span className="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">Enterprise?</span>
-            </h2>
-            <p className="text-2xl text-white/80 mb-12 leading-relaxed">
-              Join Fortune 500 companies already transforming their professional services with our platform.
-            </p>
+            {/* Background glow effect */}
+            <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 via-purple-500/10 to-cyan-500/10 rounded-3xl"></div>
             
-            <div className="flex flex-col sm:flex-row gap-6 justify-center">
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className="bg-gradient-to-r from-blue-500 via-purple-500 to-cyan-500 px-12 py-6 rounded-2xl text-xl font-bold text-white shadow-2xl hover:shadow-blue-500/30 transition-all duration-300"
-              >
-                Start Enterprise Trial
-              </motion.button>
+            <div className="relative z-10">
+              <h2 className="hero-title text-4xl md:text-6xl lg:text-7xl font-black text-white mb-8">
+                Ready to Get <span className="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">Started?</span>
+              </h2>
+              <p className="text-xl md:text-2xl text-white/90 mb-12 leading-relaxed max-w-4xl mx-auto">
+                Join thousands of satisfied customers who trust BookLocal for all their professional service needs. 
+                <span className="font-semibold text-blue-300"> Get started today</span> and experience the difference.
+              </p>
               
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className="border-2 border-white/30 px-12 py-6 rounded-2xl text-xl font-bold text-white hover:bg-white/10 transition-all duration-300"
+              <div className="flex flex-col sm:flex-row gap-8 justify-center items-center">
+                <motion.button
+                  whileHover={{ scale: 1.05, boxShadow: "0 20px 40px rgba(59, 130, 246, 0.4)" }}
+                  whileTap={{ scale: 0.95 }}
+                  className="group bg-gradient-to-r from-blue-500 via-purple-500 to-cyan-500 px-16 py-6 rounded-2xl text-xl font-bold text-white shadow-2xl hover:shadow-blue-500/30 transition-all duration-300 relative overflow-hidden"
+                  onClick={() => window.dispatchEvent(new Event("openPostPanel"))}
+                >
+                  <span className="relative z-10 flex items-center space-x-3">
+                    <Sparkles className="w-6 h-6" />
+                    <span>Post Your First Project</span>
+                    <ArrowRight className="w-6 h-6 group-hover:translate-x-1 transition-transform" />
+                  </span>
+                  <div className="absolute inset-0 bg-gradient-to-r from-blue-600 via-purple-600 to-cyan-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                </motion.button>
+                
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="group border-2 border-white/30 px-16 py-6 rounded-2xl text-xl font-bold text-white hover:bg-white/10 transition-all duration-300 backdrop-blur-sm"
+                  onClick={() => setIsSearchOpen(true)}
+                >
+                  <span className="flex items-center space-x-3">
+                    <Search className="w-6 h-6" />
+                    <span>Browse Professionals</span>
+                  </span>
+                </motion.button>
+              </div>
+              
+              {/* Trust indicators */}
+              <motion.div 
+                className="flex justify-center items-center space-x-8 mt-12 text-white/60"
+                initial={{ opacity: 0 }}
+                whileInView={{ opacity: 1 }}
+                transition={{ delay: 0.5 }}
               >
-                Schedule Demo
-              </motion.button>
+                <div className="flex items-center space-x-2">
+                  <Shield className="w-5 h-5 text-green-400" />
+                  <span className="text-sm font-medium">100% Secure</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Users className="w-5 h-5 text-blue-400" />
+                  <span className="text-sm font-medium">50,000+ Professionals</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Star className="w-5 h-5 text-yellow-400 fill-current" />
+                  <span className="text-sm font-medium">4.9/5 Rating</span>
+                </div>
+              </motion.div>
             </div>
           </motion.div>
         </div>

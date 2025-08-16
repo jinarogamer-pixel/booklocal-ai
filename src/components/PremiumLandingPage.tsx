@@ -15,6 +15,8 @@ import ShaderBg from "./ShaderBg";
 import ThreeHero from "./ThreeHero";
 import CaseStudy from "./CaseStudy";
 import EnterpriseHeroSection from "./EnterpriseHeroSection";
+import { TestimonialsSection, PricingSection } from "./PremiumSections";
+import AuthenticatedThreeHero from "./AuthenticatedThreeHero";
 import MagneticButton from "./MagneticButton";
 import PostProjectPanel from "./PostProjectPanel";
 import FinishSwap from "./FinishSwap";
@@ -832,7 +834,22 @@ const PremiumLandingPage = () => {
           >
             <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 via-purple-500/20 to-cyan-500/20 rounded-3xl blur-3xl"></div>
             <div className="relative premium-glass rounded-3xl p-8 overflow-hidden">
-              <ThreeHero onStep={(step: number) => {}} />
+              <AuthenticatedThreeHero 
+                fallbackContent={
+                  <div className="text-center py-12">
+                    <h3 className="text-2xl font-bold text-white mb-4">Premium 3D Workspace</h3>
+                    <p className="text-white/80 text-lg mb-6">
+                      Sign in to access our advanced 3D workspace with interactive project visualization
+                    </p>
+                    <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                      <button className="btn-quantum">Sign In to Access</button>
+                      <button className="glass-card px-6 py-3 rounded-xl text-white hover:bg-white/20 transition-all duration-300">
+                        Learn More
+                      </button>
+                    </div>
+                  </div>
+                }
+              />
             </div>
           </motion.div>
         </div>
@@ -1081,6 +1098,12 @@ const PremiumLandingPage = () => {
           </div>
         </section>
       )}
+      
+      {/* Testimonials Section */}
+      <TestimonialsSection />
+      
+      {/* Pricing Section */}
+      <PricingSection />
     </div>
   );
 };

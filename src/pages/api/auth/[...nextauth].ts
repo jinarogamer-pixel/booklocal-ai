@@ -33,10 +33,11 @@ export const authOptions: NextAuthOptions = {
 
 // Rate limited NextAuth handler
 async function handler(req: NextApiRequest, res: NextApiResponse) {
-  // Rate limit auth requests (10 per minute)
+  // Stricter rate limit for auth requests (3 per 15 minutes)
   const allowed = await withRateLimit(req, res, {
-    limit: 10,
-    windowSeconds: 60,
+    limit: 3,
+    windowSeconds: 900, // 15 minutes
+    identifier: 'auth-attempts',
   });
 
   if (!allowed) {

@@ -1,6 +1,6 @@
 "use client";
 import { Canvas, useFrame } from "@react-three/fiber";
-import { Environment, useGLTF } from "@react-three/drei";
+import { Environment, useGLTF, Text, Float, Sphere, Box, Cylinder, Torus } from "@react-three/drei";
 import * as THREE from "three";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
@@ -10,143 +10,253 @@ gsap.registerPlugin(ScrollTrigger);
 
 export default function ThreeHeroCanvas({ onStep }: { onStep?: (s: number) => void }) {
   return (
-    <Canvas camera={{ position: [2.6, 1.4, 3.0], fov: 42 }} dpr={[1, 1.8]} gl={{ antialias: true }}>
-      <ambientLight intensity={0.5} />
-      <directionalLight position={[3, 5, 2]} intensity={1.2} />
+    <Canvas 
+      camera={{ position: [2.6, 1.4, 3.0], fov: 42 }} 
+      dpr={[1, 1.8]} 
+      gl={{ antialias: true, alpha: true }}
+      style={{ background: 'transparent' }}
+    >
+      <ambientLight intensity={0.4} />
+      <directionalLight position={[5, 8, 3]} intensity={1.5} castShadow />
+      <pointLight position={[-3, 2, -2]} intensity={0.8} color="#4f46e5" />
+      <pointLight position={[3, -1, 2]} intensity={0.6} color="#06b6d4" />
       <Environment preset="city" />
-      <Room onStep={onStep} />
+      <ProfessionalStudio onStep={onStep} />
     </Canvas>
   );
 }
 
-function Room({ onStep }: { onStep?: (s: number) => void }) {
+function ProfessionalStudio({ onStep }: { onStep?: (s: number) => void }) {
   const group = useRef<THREE.Group>(null);
   const { scene } = useGLTF("/models/room.glb", true);
 
-  const mats = useMemo(() => {
-    const found: Record<string, THREE.MeshStandardMaterial> = {};
-    scene.traverse((o) => {
-      const mesh = o as THREE.Mesh;
-      const m = mesh?.material as THREE.MeshStandardMaterial | undefined;
-      if (!m) return;
-      // Convert any material to standard for consistency
-      if (!(m instanceof THREE.MeshStandardMaterial)) {
-        const newMat = new THREE.MeshStandardMaterial({ color: 0xcccccc });
-        mesh.material = newMat;
-        found.default = newMat;
-        return;
-      }
-      if (/floor/i.test(m.name)) found.floor = m;
-      if (/wall/i.test(m.name)) found.wall = m;
-      if (/sofa|couch/i.test(m.name)) found.sofa = m;
-      if (!found.floor && /ground/i.test(o.name)) found.floor = m;
-      if (!found.wall && /ceiling/i.test(o.name)) found.wall = m;
-      if (!found.sofa && /furniture/i.test(o.name)) found.sofa = m;
-    });
-    
-    // If no materials found by name, use first few materials
-    const allMats = Object.values(found);
-    if (allMats.length === 0) {
-      scene.traverse((o) => {
-        const mesh = o as THREE.Mesh;
-        const m = mesh?.material as THREE.MeshStandardMaterial;
-        if (m instanceof THREE.MeshStandardMaterial && !found.floor) found.floor = m;
-        else if (m instanceof THREE.MeshStandardMaterial && !found.wall) found.wall = m;
-        else if (m instanceof THREE.MeshStandardMaterial && !found.sofa) found.sofa = m;
-      });
-    }
-    
-    return found;
-  }, [scene]);
+  // Create sophisticated materials
+  const materials = useMemo(() => ({
+    glass: new THREE.MeshPhysicalMaterial({
+      transmission: 0.9,
+      opacity: 0.1,
+      roughness: 0.1,
+      metalness: 0,
+      clearcoat: 1,
+      clearcoatRoughness: 0.1,
+      ior: 1.5,
+      thickness: 0.01,
+      transparent: true,
+    }),
+    metal: new THREE.MeshStandardMaterial({
+      color: "#2563eb",
+      metalness: 0.9,
+      roughness: 0.1,
+    }),
+    premium: new THREE.MeshStandardMaterial({
+      color: "#8b5cf6",
+      metalness: 0.7,
+      roughness: 0.2,
+    }),
+    accent: new THREE.MeshStandardMaterial({
+      color: "#06b6d4",
+      metalness: 0.8,
+      roughness: 0.15,
+    }),
+    floor: new THREE.MeshStandardMaterial({
+      color: "#1e293b",
+      metalness: 0.3,
+      roughness: 0.4,
+    }),
+  }), []);
 
-  // ===== MATERIAL PRESETS =====
+  // Professional Service Icons in 3D
+  function ServiceIcon({ position, material, geometry }: { position: [number, number, number], material: THREE.Material, geometry: THREE.BufferGeometry }) {
+    const ref = useRef<THREE.Mesh>(null);
+    
+    useFrame((state) => {
+      if (!ref.current) return;
+      ref.current.rotation.y = Math.sin(state.clock.elapsedTime * 0.5) * 0.1;
+      ref.current.position.y = position[1] + Math.sin(state.clock.elapsedTime * 0.8 + position[0]) * 0.05;
+    });
+
+    return (
+      <Float speed={1.5} rotationIntensity={0.2} floatIntensity={0.3}>
+        <mesh ref={ref} position={position} material={material} geometry={geometry} castShadow />
+      </Float>
+    );
+  }
+
+  // Create professional environment instead of basic room
+  function ProfessionalEnvironment() {
+    return (
+      <group>
+        {/* Premium Floor */}
+        <mesh position={[0, -1, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+          <planeGeometry args={[12, 12]} />
+          <primitive object={materials.floor} />
+        </mesh>
+
+        {/* Glass Conference Table */}
+        <mesh position={[0, -0.3, 0]} material={materials.glass} castShadow>
+          <cylinderGeometry args={[2, 2, 0.1, 32]} />
+        </mesh>
+
+        {/* Service Pillars - Representing different services */}
+        <ServiceIcon 
+          position={[-2, 0.5, -1]} 
+          material={materials.metal} 
+          geometry={new THREE.CylinderGeometry(0.3, 0.3, 1.5, 8)} 
+        />
+        <ServiceIcon 
+          position={[2, 0.5, -1]} 
+          material={materials.premium} 
+          geometry={new THREE.BoxGeometry(0.6, 1.5, 0.6)} 
+        />
+        <ServiceIcon 
+          position={[0, 0.5, -2.5]} 
+          material={materials.accent} 
+          geometry={new THREE.TorusGeometry(0.4, 0.15, 8, 16)} 
+        />
+
+        {/* Floating Data Orbs */}
+        <Float speed={2} rotationIntensity={0.5} floatIntensity={0.8}>
+          <mesh position={[-1.5, 1.5, 1]} material={materials.glass} castShadow>
+            <sphereGeometry args={[0.2, 32, 32]} />
+          </mesh>
+        </Float>
+        
+        <Float speed={1.8} rotationIntensity={0.3} floatIntensity={0.6}>
+          <mesh position={[1.5, 1.2, 0.5]} material={materials.accent} castShadow>
+            <sphereGeometry args={[0.15, 32, 32]} />
+          </mesh>
+        </Float>
+
+        <Float speed={2.2} rotationIntensity={0.4} floatIntensity={0.7}>
+          <mesh position={[0.5, 1.8, -0.5]} material={materials.premium} castShadow>
+            <sphereGeometry args={[0.18, 32, 32]} />
+          </mesh>
+        </Float>
+
+        {/* Professional Service Labels */}
+        <Text
+          position={[-2, 1.8, -1]}
+          fontSize={0.15}
+          color="#ffffff"
+          anchorX="center"
+          anchorY="middle"
+        >
+          HOME SERVICES
+        </Text>
+
+        <Text
+          position={[2, 1.8, -1]}
+          fontSize={0.15}
+          color="#ffffff"
+          anchorX="center"
+          anchorY="middle"
+        >
+          BUSINESS
+        </Text>
+
+        <Text
+          position={[0, 1.8, -2.5]}
+          fontSize={0.15}
+          color="#ffffff"
+          anchorX="center"
+          anchorY="middle"
+        >
+          ENTERPRISE
+        </Text>
+
+        {/* Holographic Display Panels */}
+        <mesh position={[-3, 1, 0]} rotation={[0, Math.PI / 4, 0]} material={materials.glass}>
+          <planeGeometry args={[1.5, 2]} />
+        </mesh>
+        
+        <mesh position={[3, 1, 0]} rotation={[0, -Math.PI / 4, 0]} material={materials.glass}>
+          <planeGeometry args={[1.5, 2]} />
+        </mesh>
+
+        {/* Premium Lighting Fixtures */}
+        <mesh position={[0, 3, 0]} material={materials.metal}>
+          <cylinderGeometry args={[0.1, 0.1, 0.5, 8]} />
+        </mesh>
+        
+        {/* Ambient Glow Effects */}
+        <mesh position={[0, 2.5, 0]}>
+          <sphereGeometry args={[0.3, 16, 16]} />
+          <meshBasicMaterial color="#4f46e5" transparent opacity={0.3} />
+        </mesh>
+      </group>
+    );
+  }
+
+  // ===== MATERIAL PRESETS FOR ROOM MODEL =====
   const presets = [
     {
-      name: "Dark Modern",
-      floor: "#2D1B1B", // Dark mahogany
-      wall: "#1F1F23",  // Charcoal
-      sofa: "#0F0F0F",  // Deep black leather
-      roughness: 0.3,
-      metalness: 0.1,
-    },
-    {
-      name: "Warm Minimal", 
-      floor: "#D4A574", // Warm oak
-      wall: "#F5F1EA",  // Cream
-      sofa: "#8B6F47",  // Tan leather
-      roughness: 0.4,
-      metalness: 0.05,
-    },
-    {
-      name: "Cool Studio",
-      floor: "#A8B2B8", // Cool concrete
-      wall: "#E8EAED",  // Light gray
-      sofa: "#4A5568",  // Slate blue
-      roughness: 0.6,
-      metalness: 0.2,
-    },
-    {
-      name: "Industrial Loft",
-      floor: "#5D4E37", // Dark wood
-      wall: "#2C2C2C",  // Exposed brick gray
-      sofa: "#8B4513",  // Cognac leather
-      roughness: 0.7,
-      metalness: 0.3,
-    },
-    {
-      name: "Luxury Gold",
-      floor: "#CD7F32", // Bronze hardwood
-      wall: "#F4F1DE",  // Champagne
-      sofa: "#DAA520",  // Goldrod velvet
+      name: "Professional Blue",
+      primary: "#1e40af",
+      secondary: "#3b82f6", 
+      accent: "#60a5fa",
       roughness: 0.2,
-      metalness: 0.4,
+      metalness: 0.8,
     },
     {
-      name: "Ocean Breeze",
-      floor: "#B0C4DE", // Light blue-gray
-      wall: "#F0F8FF",  // Alice blue
-      sofa: "#4682B4",  // Steel blue
-      roughness: 0.5,
-      metalness: 0.1,
-    }
+      name: "Executive Purple", 
+      primary: "#7c3aed",
+      secondary: "#8b5cf6",
+      accent: "#a78bfa",
+      roughness: 0.3,
+      metalness: 0.7,
+    },
+    {
+      name: "Corporate Cyan",
+      primary: "#0891b2",
+      secondary: "#06b6d4",
+      accent: "#22d3ee",
+      roughness: 0.25,
+      metalness: 0.75,
+    },
+    {
+      name: "Premium Gold",
+      primary: "#d97706",
+      secondary: "#f59e0b",
+      accent: "#fbbf24",
+      roughness: 0.15,
+      metalness: 0.9,
+    },
   ];
 
   function applyPreset(ix: number) {
     const p = presets[ix % presets.length];
-    if (mats.floor) { 
-      mats.floor.color = new THREE.Color(p.floor); 
-      mats.floor.roughness = p.roughness; 
-      mats.floor.metalness = p.metalness; 
-      mats.floor.needsUpdate = true; 
-    }
-    if (mats.wall) { 
-      mats.wall.color = new THREE.Color(p.wall); 
-      mats.wall.roughness = p.roughness; 
-      mats.wall.metalness = p.metalness; 
-      mats.wall.needsUpdate = true; 
-    }
-    if (mats.sofa) { 
-      mats.sofa.color = new THREE.Color(p.sofa); 
-      mats.sofa.roughness = p.roughness; 
-      mats.sofa.metalness = p.metalness; 
-      mats.sofa.needsUpdate = true; 
-    }
+    
+    // Apply to custom materials
+    materials.metal.color = new THREE.Color(p.primary);
+    materials.premium.color = new THREE.Color(p.secondary);
+    materials.accent.color = new THREE.Color(p.accent);
+    
+    materials.metal.roughness = p.roughness;
+    materials.premium.roughness = p.roughness;
+    materials.accent.roughness = p.roughness;
+    
+    materials.metal.metalness = p.metalness;
+    materials.premium.metalness = p.metalness;
+    materials.accent.metalness = p.metalness;
+
+    // Update materials
+    Object.values(materials).forEach(mat => {
+      mat.needsUpdate = true;
+    });
   }
 
   useEffect(() => {
-    // Start on preset 0
+    // Start with professional blue theme
     applyPreset(0);
 
-    // Listen for Finish Swap button events
+    // Listen for preset changes
     const onHeroPreset = (e: Event) => {
       const detail = (e as CustomEvent).detail as { index: number };
       applyPreset(detail.index);
     };
     
-    // Listen for demo mode step events
     const onDemoStep = (e: Event) => {
       const detail = (e as CustomEvent).detail as { step: number };
-      // Auto-apply preset based on demo step
       const presetIndex = detail.step % presets.length;
       applyPreset(presetIndex);
     };
@@ -158,21 +268,27 @@ function Room({ onStep }: { onStep?: (s: number) => void }) {
       window.removeEventListener("heroPreset", onHeroPreset as EventListener);
       window.removeEventListener("demoStep", onDemoStep as EventListener);
     };
-  }, [presets, mats]);
+  }, [materials, presets]);
 
-  // ===== SCROLL SEQUENCE (broadcast step changes) =====
+  // ===== SCROLL SEQUENCE =====
   useEffect(() => {
     const tl = gsap.timeline({
-      scrollTrigger: { trigger: "#story-sections", start: "top top", end: "bottom bottom", scrub: 0.6 },
+      scrollTrigger: { 
+        trigger: "#story-sections", 
+        start: "top top", 
+        end: "bottom bottom", 
+        scrub: 0.6 
+      },
       defaults: { ease: "power2.out", duration: 1.2 },
     });
 
     if (group.current) {
-      tl.to(group.current.rotation, { y: "+=0.6" }, 0.0)
-        .to(group.current.position, { x: -0.2, y: 0, z: 0.1 }, 0.0);
+      tl.to(group.current.rotation, { y: "+=1.2", x: "+=0.2" }, 0.0)
+        .to(group.current.position, { x: -0.3, y: 0.2, z: 0.1 }, 0.0)
+        .to(group.current.scale, { x: 1.1, y: 1.1, z: 1.1 }, 0.0);
     }
 
-    // Broadcast steps 0..3 as you scroll
+    // Broadcast steps with enhanced timing
     tl.to({}, { duration: 0.01, onComplete: () => broadcast(0) }, 0);
     tl.addLabel("step1", ">").to({}, { duration: 0.01, onComplete: () => broadcast(1) }, "step1");
     tl.addLabel("step2", ">").to({}, { duration: 0.01, onComplete: () => broadcast(2) }, "step2");
@@ -189,41 +305,40 @@ function Room({ onStep }: { onStep?: (s: number) => void }) {
     };
   }, [onStep]);
 
-  useFrame(({ mouse }) => {
+  // Enhanced mouse interaction
+  useFrame(({ mouse, clock }) => {
     if (!group.current) return;
-    group.current.rotation.x = THREE.MathUtils.lerp(group.current.rotation.x, mouse.y * 0.15, 0.05);
-    group.current.rotation.y = THREE.MathUtils.lerp(group.current.rotation.y, mouse.x * 0.15, 0.05);
-  });
-
-  return <primitive object={scene} ref={group} position={[0, -0.6, 0]} />;
-}
-
-// Create a fallback scene if no GLTF is available
-function FallbackScene() {
-  const ref = useRef<THREE.Group>(null);
-  
-  useFrame((state) => {
-    if (!ref.current) return;
-    ref.current.rotation.y = state.clock.elapsedTime * 0.3;
+    
+    const targetRotationX = mouse.y * 0.1;
+    const targetRotationY = mouse.x * 0.15;
+    
+    group.current.rotation.x = THREE.MathUtils.lerp(
+      group.current.rotation.x, 
+      targetRotationX + Math.sin(clock.elapsedTime * 0.2) * 0.02, 
+      0.02
+    );
+    group.current.rotation.y = THREE.MathUtils.lerp(
+      group.current.rotation.y, 
+      targetRotationY + Math.sin(clock.elapsedTime * 0.15) * 0.03, 
+      0.02
+    );
   });
 
   return (
-    <group ref={ref}>
-      <mesh castShadow receiveShadow>
-        <boxGeometry args={[1.6, 1, 1.2]} />
-        <meshStandardMaterial color="#0ea5e9" metalness={0.1} roughness={0.3} />
-      </mesh>
-      <mesh position={[0, 0.8, 0]} castShadow>
-        <coneGeometry args={[1.2, 0.8, 4]} />
-        <meshStandardMaterial color="#7c3aed" metalness={0.2} roughness={0.2} />
-      </mesh>
+    <group ref={group} position={[0, -0.6, 0]}>
+      {/* Try to load the room model, fallback to professional environment */}
+      {scene && scene.children.length > 0 ? (
+        <primitive object={scene} />
+      ) : (
+        <ProfessionalEnvironment />
+      )}
     </group>
   );
 }
 
-// Only preload if file exists, otherwise use fallback
+// Enhanced preloading with error handling
 try {
   useGLTF.preload("/models/room.glb");
 } catch (e) {
-  console.warn("No room.glb found, using fallback scene");
+  console.log("Using professional 3D environment instead of room.glb");
 }

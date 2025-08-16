@@ -1,0 +1,16 @@
+{
+  "recommendations": [
+    "continue.continue",
+    "ms-vscode.vscode-typescript-next",
+    "bradlc.vscode-tailwindcss",
+    "esbenp.prettier-vscode",
+    "dbaeumer.vscode-eslint",
+    "ms-vscode.vscode-json",
+    "unifiedjs.vscode-mdx",
+    "github.copilot",
+    "github.copilot-chat",
+    "vercel.turbo-vsc",
+    "supabase.supabase-vscode",
+    "ms-vscode.vscode-file-watcher"
+  ]
+}

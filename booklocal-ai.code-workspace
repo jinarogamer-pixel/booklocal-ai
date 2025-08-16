@@ -1,0 +1,199 @@
+{
+  "folders": [
+    {
+      "name": "BookLocal AI",
+      "path": "."
+    }
+  ],
+  "settings": {
+    "continue.telemetryEnabled": false,
+    "continue.manuallyRunningSserver": false,
+    "typescript.preferences.strictNullChecks": "on",
+    "typescript.preferences.strictFunctionTypes": "on", 
+    "typescript.preferences.noImplicitReturns": "on",
+    "typescript.preferences.noImplicitAny": "on",
+    "typescript.preferences.noImplicitThis": "on",
+    "typescript.preferences.alwaysStrict": "on",
+    "typescript.preferences.strictBindCallApply": "on",
+    "typescript.preferences.strictPropertyInitialization": "on",
+    "typescript.preferences.noImplicitOverride": "on",
+    "typescript.preferences.useDefineForClassFields": "on",
+    "typescript.preferences.noPropertyAccessFromIndexSignature": "on",
+    "typescript.preferences.exactOptionalPropertyTypes": "on",
+    "typescript.preferences.noUncheckedIndexedAccess": "on",
+    "typescript.preferences.noImplicitReturns": "on",
+    "typescript.suggest.enabled": true,
+    "typescript.suggest.paths": true,
+    "typescript.suggest.autoImports": "on",
+    "typescript.suggest.completeFunctionCalls": true,
+    "typescript.preferences.includePackageJsonAutoImports": "on",
+    "editor.codeActionsOnSave": {
+      "source.fixAll.eslint": "explicit",
+      "source.organizeImports": "explicit",
+      "source.removeUnusedImports": "explicit"
+    },
+    "eslint.validate": [
+      "javascript",
+      "javascriptreact", 
+      "typescript",
+      "typescriptreact"
+    ],
+    "eslint.format.enable": true,
+    "eslint.codeAction.showDocumentation": {
+      "enable": true
+    },
+    "editor.formatOnSave": true,
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "[typescript]": {
+      "editor.defaultFormatter": "esbenp.prettier-vscode",
+      "editor.formatOnSave": true
+    },
+    "[typescriptreact]": {
+      "editor.defaultFormatter": "esbenp.prettier-vscode",
+      "editor.formatOnSave": true
+    },
+    "[json]": {
+      "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
+    "emmet.includeLanguages": {
+      "typescript": "html",
+      "typescriptreact": "html"
+    },
+    "files.associations": {
+      "*.tsx": "typescriptreact",
+      "*.ts": "typescript"
+    },
+    "search.exclude": {
+      "**/node_modules": true,
+      "**/bower_components": true,
+      "**/*.code-search": true,
+      "**/dist": true,
+      "**/.next": true,
+      "**/.vercel": true,
+      "**/coverage": true
+    },
+    "files.watcherExclude": {
+      "**/node_modules/**": true,
+      "**/.next/**": true,
+      "**/.vercel/**": true,
+      "**/dist/**": true
+    },
+    "git.ignoreLimitWarning": true,
+    "git.autofetch": true,
+    "git.enableSmartCommit": true,
+    "git.confirmSync": false,
+    "workbench.editor.enablePreview": false,
+    "workbench.editor.enablePreviewFromQuickOpen": false,
+    "workbench.startupEditor": "newUntitledFile",
+    "explorer.confirmDelete": false,
+    "explorer.confirmDragAndDrop": false,
+    "terminal.integrated.defaultProfile.osx": "zsh",
+    "terminal.integrated.fontSize": 12,
+    "editor.minimap.enabled": true,
+    "editor.bracketPairColorization.enabled": true,
+    "editor.guides.bracketPairs": "active",
+    "editor.inlineSuggest.enabled": true,
+    "github.copilot.enable": {
+      "*": true,
+      "yaml": false,
+      "plaintext": false,
+      "markdown": true,
+      "typescript": true,
+      "typescriptreact": true,
+      "javascript": true,
+      "javascriptreact": true
+    },
+    "continue.enableTabAutocomplete": true,
+    "continue.chat.fontSize": 14,
+    "continue.chat.theme": "dark"
+  },
+  "extensions": {
+    "recommendations": [
+      "continue.continue",
+      "ms-vscode.vscode-typescript-next",
+      "bradlc.vscode-tailwindcss",
+      "esbenp.prettier-vscode", 
+      "dbaeumer.vscode-eslint",
+      "ms-vscode.vscode-json",
+      "unifiedjs.vscode-mdx",
+      "ms-vscode.vscode-file-watcher",
+      "ms-vscode.vscode-folder-source-actions",
+      "github.copilot",
+      "github.copilot-chat",
+      "vercel.turbo-vsc",
+      "supabase.supabase-vscode"
+    ]
+  },
+  "tasks": {
+    "version": "2.0.0",
+    "tasks": [
+      {
+        "label": "dev",
+        "type": "shell",
+        "command": "npm run dev",
+        "group": "build",
+        "presentation": {
+          "echo": true,
+          "reveal": "always",
+          "focus": false,
+          "panel": "new"
+        },
+        "runOptions": {
+          "runOn": "folderOpen"
+        }
+      },
+      {
+        "label": "build",
+        "type": "shell", 
+        "command": "npm run build",
+        "group": "build",
+        "presentation": {
+          "echo": true,
+          "reveal": "always",
+          "focus": false,
+          "panel": "new"
+        }
+      },
+      {
+        "label": "typecheck",
+        "type": "shell",
+        "command": "npm run typecheck", 
+        "group": "test",
+        "presentation": {
+          "echo": true,
+          "reveal": "always",
+          "focus": false,
+          "panel": "new"
+        }
+      },
+      {
+        "label": "lint",
+        "type": "shell",
+        "command": "npm run lint",
+        "group": "test",
+        "presentation": {
+          "echo": true,
+          "reveal": "always", 
+          "focus": false,
+          "panel": "new"
+        }
+      }
+    ]
+  },
+  "launch": {
+    "version": "0.2.0",
+    "configurations": [
+      {
+        "name": "Next.js Debug",
+        "type": "node",
+        "request": "launch",
+        "program": "${workspaceFolder}/node_modules/.bin/next",
+        "args": ["dev"],
+        "console": "integratedTerminal",
+        "env": {
+          "NODE_OPTIONS": "--inspect"
+        }
+      }
+    ]
+  }
+}

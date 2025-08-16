@@ -1,0 +1,101 @@
+{
+  "continue.telemetryEnabled": false,
+  "continue.manuallyRunningSserver": false,
+  "typescript.preferences.strictNullChecks": true,
+  "typescript.preferences.strictFunctionTypes": true,
+  "typescript.preferences.noImplicitReturns": true,
+  "typescript.preferences.noImplicitAny": true,
+  "typescript.preferences.noImplicitThis": true,
+  "typescript.preferences.alwaysStrict": true,
+  "typescript.preferences.strictBindCallApply": true,
+  "typescript.preferences.strictPropertyInitialization": true,
+  "typescript.preferences.noImplicitOverride": true,
+  "typescript.preferences.useDefineForClassFields": true,
+  "typescript.preferences.noPropertyAccessFromIndexSignature": true,
+  "typescript.preferences.exactOptionalPropertyTypes": true,
+  "typescript.preferences.noUncheckedIndexedAccess": true,
+  "typescript.suggest.enabled": true,
+  "typescript.suggest.paths": true,
+  "typescript.suggest.autoImports": true,
+  "typescript.suggest.completeFunctionCalls": true,
+  "typescript.preferences.includePackageJsonAutoImports": "on",
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": "explicit",
+    "source.organizeImports": "explicit",
+    "source.removeUnusedImports": "explicit"
+  },
+  "eslint.validate": [
+    "javascript",
+    "javascriptreact",
+    "typescript", 
+    "typescriptreact"
+  ],
+  "eslint.format.enable": true,
+  "eslint.codeAction.showDocumentation": {
+    "enable": true
+  },
+  "editor.formatOnSave": true,
+  "editor.defaultFormatter": "vscode.typescript-language-features",
+  "[typescript]": {
+    "editor.defaultFormatter": "vscode.typescript-language-features",
+    "editor.formatOnSave": true
+  },
+  "[typescriptreact]": {
+    "editor.defaultFormatter": "vscode.typescript-language-features",
+    "editor.formatOnSave": true
+  },
+  "[json]": {
+    "editor.defaultFormatter": "vscode.json-language-features"
+  },
+  "emmet.includeLanguages": {
+    "typescript": "html",
+    "typescriptreact": "html"
+  },
+  "files.associations": {
+    "*.tsx": "typescriptreact",
+    "*.ts": "typescript"
+  },
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/bower_components": true,
+    "**/*.code-search": true,
+    "**/dist": true,
+    "**/.next": true,
+    "**/.vercel": true,
+    "**/coverage": true
+  },
+  "files.watcherExclude": {
+    "**/node_modules/**": true,
+    "**/.next/**": true,
+    "**/.vercel/**": true,
+    "**/dist/**": true
+  },
+  "git.ignoreLimitWarning": true,
+  "git.autofetch": true,
+  "git.enableSmartCommit": true,
+  "git.confirmSync": false,
+  "workbench.editor.enablePreview": false,
+  "workbench.editor.enablePreviewFromQuickOpen": false,
+  "workbench.startupEditor": "newUntitledFile",
+  "explorer.confirmDelete": false,
+  "explorer.confirmDragAndDrop": false,
+  "terminal.integrated.defaultProfile.osx": "zsh",
+  "terminal.integrated.fontSize": 12,
+  "editor.minimap.enabled": true,
+  "editor.bracketPairColorization.enabled": true,
+  "editor.guides.bracketPairs": "active",
+  "editor.inlineSuggest.enabled": true,
+  "github.copilot.enable": {
+    "*": true,
+    "yaml": false,
+    "plaintext": false,
+    "markdown": true,
+    "typescript": true,
+    "typescriptreact": true,
+    "javascript": true,
+    "javascriptreact": true
+  },
+  "continue.enableTabAutocomplete": true,
+  "continue.chat.fontSize": 14,
+  "continue.chat.theme": "dark"
+}

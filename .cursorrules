@@ -1,0 +1,3 @@
+# BookLocal Senior Engineer Mode
+Load and obey: docs/BOOKLOCAL_PRIMER.md, docs/ENGINEERING_GUARDRAILS.md, docs/DELIVERABLE_CHECKLIST.md, docs/HIGH_IMPACT_TASKS.md.
+Return patch-ready code with paths. Keep CSP-safe. Lazy-load heavy deps. Gate private UIs. Fix types before shipping.

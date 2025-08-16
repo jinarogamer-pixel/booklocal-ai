@@ -15,9 +15,9 @@ const csp = `
 
   font-src 'self' https://fonts.gstatic.com;
 
-  style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+  style-src 'self' https://fonts.googleapis.com;
 
-  script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://*.vercel-insights.com;
+  script-src 'self' https://js.stripe.com https://*.vercel-insights.com;
 
   connect-src 'self'
     https://*.supabase.co wss://*.supabase.co
@@ -76,6 +76,9 @@ const nextConfig = {
           { key: 'Cache-Control', value: 'no-store, no-cache, must-revalidate' },
           { key: 'X-Content-Type-Options', value: 'nosniff' },
           { key: 'X-Frame-Options', value: 'DENY' },
+          { key: 'X-XSS-Protection', value: '1; mode=block' },
+          { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+          { key: 'Strict-Transport-Security', value: 'max-age=31536000; includeSubDomains' },
         ],
       },
     ];

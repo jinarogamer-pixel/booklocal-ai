@@ -26,6 +26,7 @@
     "framer-motion": "^12.23.12",
     "gsap": "^3.13.0",
     "i18next": "^25.3.4",
+    "isomorphic-dompurify": "^2.26.0",
     "jsonwebtoken": "^9.0.2",
     "lucide-react": "^0.539.0",
     "next": "15.4.6",

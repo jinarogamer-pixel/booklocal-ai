@@ -4,7 +4,7 @@ import PayoutHistory from './PayoutHistory';
 import PaymentMethods from './PaymentMethods';
 import AuthGuard from '../components/AuthGuard';
 
-export default function PaymentsDashboard(_props: unknown) {
+export default function PaymentsDashboard() {
   return (
     <AuthGuard>
       <div style={{ maxWidth: 600, margin: '3rem auto' }}>

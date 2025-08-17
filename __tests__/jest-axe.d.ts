@@ -1,6 +1,5 @@
 
 import 'jest-axe';
-import { AxeResults } from 'jest-axe';
 
 declare global {
   namespace jest {

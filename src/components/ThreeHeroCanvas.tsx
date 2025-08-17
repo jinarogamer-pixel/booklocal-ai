@@ -4,17 +4,19 @@ import { Environment, useGLTF } from "@react-three/drei";
 import * as THREE from "three";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, Suspense } from "react";
 
 gsap.registerPlugin(ScrollTrigger);
 
 export default function ThreeHeroCanvas({ onStep }: { onStep?: (s: number) => void }) {
   return (
     <Canvas camera={{ position: [2.6, 1.4, 3.0], fov: 42 }} dpr={[1, 1.8]} gl={{ antialias: true }}>
-      <ambientLight intensity={0.5} />
-      <directionalLight position={[3, 5, 2]} intensity={1.2} />
-      <Environment preset="city" />
-      <Room onStep={onStep} />
+      <Suspense fallback={null}>
+        <ambientLight intensity={0.5} />
+        <directionalLight position={[3, 5, 2]} intensity={1.2} />
+        <Environment files="/hdr/potsdamer_platz_1k.hdr" background={false} />
+        <Room onStep={onStep} />
+      </Suspense>
     </Canvas>
   );
 }

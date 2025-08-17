@@ -1,11 +1,10 @@
 "use client";
-import { useState, useEffect } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { 
   getAnalyticsMetrics, 
   getBookingAnalytics, 
   AnalyticsMetrics, 
-  BookingAnalytics,
-  trackEvent 
+  BookingAnalytics
 } from '../../lib/analytics';
 
 export default function AnalyticsDashboard() {
@@ -15,12 +14,7 @@ export default function AnalyticsDashboard() {
   const [dateRange, setDateRange] = useState('30d');
   const [selectedTab, setSelectedTab] = useState('overview');
 
-  useEffect(() => {
-    trackEvent('page_view', { page: 'analytics-dashboard' });
-    loadAnalytics();
-  }, [dateRange]);
-
-  const loadAnalytics = async () => {
+  const loadAnalytics = useCallback(async () => {
     setLoading(true);
     try {
       const endDate = new Date().toISOString();
@@ -38,7 +32,11 @@ export default function AnalyticsDashboard() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [dateRange]);
+
+  useEffect(() => {
+    loadAnalytics();
+  }, [loadAnalytics]);
 
   const getDaysFromRange = (range: string): number => {
     switch (range) {

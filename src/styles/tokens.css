@@ -1,0 +1,38 @@
+:root{
+  /* color system */
+  --bg: #0b0d12;
+  --surface: #121520;
+  --card: #151826;
+  --border: 0 0% 100% / 8%;
+  --text-1: 240 6% 90%;
+  --text-2: 240 5% 70%;
+  --brand: 194 100% 48%;      /* teal */
+  --brand-2: 265 92% 60%;     /* accent */
+  --ok: 142 72% 45%;
+  --warn: 38 95% 55%;
+  --bad: 0 84% 64%;
+
+  /* radius / shadow */
+  --radius: 14px;
+  --blur: 10px;
+  --shadow-1: 0 10px 30px rgba(0,0,0,.35);
+  --shadow-2: 0 30px 80px rgba(0,0,0,.5);
+
+  /* spacing scale */
+  --s-1: .25rem; --s-2: .5rem; --s-3: .75rem; --s-4: 1rem;
+  --s-5: 1.5rem; --s-6: 2rem;  --s-8: 3rem;   --s-10: 4rem;
+
+  /* typography */
+  --font-sans: 'Space Grotesk', 'Geist Variable', ui-sans-serif, system-ui;
+  --lead: clamp(2.2rem, 5vw, 3.5rem);
+  --h1: clamp(1.8rem, 4vw, 2.8rem);
+  --h2: clamp(1.4rem, 2.8vw, 2rem);
+  --body: 16px;
+  --tight: -0.01em;
+
+  /* motion */
+  --ease-1: cubic-bezier(.2,.8,.2,1);
+  --ease-2: cubic-bezier(.16,1,.3,1);
+  --duration-1: 200ms;
+  --duration-2: 350ms;
+}

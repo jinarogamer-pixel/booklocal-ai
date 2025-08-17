@@ -4,21 +4,27 @@ import { useUser } from './AuthProvider';
 import { useState } from 'react';
 import AuthModal from './AuthModal';
 
-const navLinks = [
+const publicLinks = [
   { href: '/', label: 'Home' },
+  { href: '/legal/privacy', label: 'Privacy' },
+  { href: '/legal/terms', label: 'Terms' },
+];
+
+const protectedLinks = [
   { href: '/onboarding', label: 'Onboarding' },
   { href: '/provider-analytics', label: 'Analytics' },
   { href: '/admin', label: 'Admin' },
   { href: '/payments', label: 'Payments' },
   { href: '/chat', label: 'Chat' },
   { href: '/user-profile', label: 'Profile' },
-  { href: '/legal/privacy', label: 'Privacy' },
-  { href: '/legal/terms', label: 'Terms' },
 ];
 
 export default function NavBar() {
   const { user, signOut, loading } = useUser();
   const [authOpen, setAuthOpen] = useState(false);
+  
+  const linksToShow = user ? [...publicLinks, ...protectedLinks] : publicLinks;
+  
   return (
     <nav className="glass-card" style={{
       display: 'flex',
@@ -34,7 +40,7 @@ export default function NavBar() {
       position: 'relative',
       zIndex: 10,
     }}>
-      {navLinks.map(link => (
+      {linksToShow.map(link => (
         <Link key={link.href} href={link.href} className="hover:underline focus:underline" style={{ color: 'var(--foreground)' }}>
           {link.label}
         </Link>
@@ -46,7 +52,11 @@ export default function NavBar() {
           <button className="btn-primary" style={{ padding: '0.4rem 1.1rem', fontSize: '1rem' }} onClick={signOut}>Sign Out</button>
         </div>
       ) : (
-        <button className="btn-primary" style={{ padding: '0.4rem 1.1rem', fontSize: '1rem' }} onClick={() => setAuthOpen(true)}>Sign In</button>
+        <>
+          <Link href="/#features" style={{ color: 'var(--foreground)' }}>Features</Link>
+          <Link href="/#pricing" style={{ color: 'var(--foreground)' }}>Pricing</Link>
+          <button className="btn-primary" style={{ padding: '0.4rem 1.1rem', fontSize: '1rem' }} onClick={() => setAuthOpen(true)}>Get Started</button>
+        </>
       )}
       <AuthModal open={authOpen} onClose={() => setAuthOpen(false)} />
     </nav>

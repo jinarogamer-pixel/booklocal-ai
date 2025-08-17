@@ -1,7 +1,7 @@
 "use client";
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, MapPin, Filter, Star, DollarSign, Clock, User } from 'lucide-react';
+import { Search, MapPin, Star, Clock, User } from 'lucide-react';
 
 interface SearchFilters {
   category: string;

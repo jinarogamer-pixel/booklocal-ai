@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { 
   ChatMessage, 
@@ -13,7 +13,6 @@ import {
 interface ChatWidgetProps {
   conversationId: string;
   providerId: string;
-  clientId: string;
 }
 
 // Extend the session user type to include id
@@ -28,7 +27,7 @@ interface ExtendedSession {
   user: ExtendedUser;
 }
 
-export default function ChatWidget({ conversationId, providerId, clientId }: ChatWidgetProps) {
+export default function ChatWidget({ conversationId, providerId }: ChatWidgetProps) {
   const { data: session } = useSession();
   const extendedSession = session as ExtendedSession | null;
   
@@ -41,9 +40,9 @@ export default function ChatWidget({ conversationId, providerId, clientId }: Cha
   const fileInputRef = useRef<HTMLInputElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  const scrollToBottom = () => {
+  const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
+  }, []);
 
   useEffect(() => {
     scrollToBottom();
@@ -143,7 +142,7 @@ export default function ChatWidget({ conversationId, providerId, clientId }: Cha
         });
       }, 200);
 
-      const fileUrl = await uploadMessageFile(conversationId, file);
+      await uploadMessageFile(conversationId, file);
       
       clearInterval(uploadTimer);
       setUploadProgress(100);

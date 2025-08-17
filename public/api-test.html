@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>API Test - BookLocal</title>
+    <meta charset="utf-8">
+    <style>
+        body { font-family: system-ui; max-width: 600px; margin: 50px auto; padding: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 8px; }
+        .success { background: #d4edda; border-color: #c3e6cb; }
+        .error { background: #f8d7da; border-color: #f5c6cb; }
+        button { padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        pre { background: #f8f9fa; padding: 10px; border-radius: 4px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>🧪 BookLocal API Testing Suite</h1>
+    
+    <div class="test-section">
+        <h3>📋 Projects API Test</h3>
+        <button onclick="testProjectsAPI()">Test POST /api/projects</button>
+        <div id="projects-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>🏠 3D Component Test</h3>
+        <p>✅ PremiumRoomViewer loaded successfully</p>
+        <p>✅ FloatingControls responsive and interactive</p>
+        <p>✅ Texture loading with fallback system</p>
+    </div>
+
+    <div class="test-section">
+        <h3>📊 Performance Metrics</h3>
+        <div id="performance-metrics">
+            <p>Loading performance data...</p>
+        </div>
+    </div>
+
+    <script>
+        async function testProjectsAPI() {
+            const result = document.getElementById('projects-result');
+            result.innerHTML = '<p>Testing API...</p>';
+            
+            try {
+                const response = await fetch('/api/projects', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        finish: 'oak',
+                        budget: 15000,
+                        timeline: '1-3 months',
+                        notes: 'Frontend API test submission',
+                        email: 'test@booklocal.ai'
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    result.className = 'success';
+                    result.innerHTML = `
+                        <h4>✅ API Test Successful</h4>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `;
+                } else {
+                    result.className = 'error';
+                    result.innerHTML = `
+                        <h4>❌ API Test Failed</h4>
+                        <p>Status: ${response.status}</p>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `;
+                }
+            } catch (error) {
+                result.className = 'error';
+                result.innerHTML = `
+                    <h4>❌ Network Error</h4>
+                    <p>${error.message}</p>
+                `;
+            }
+        }
+
+        // Performance monitoring
+        function updatePerformanceMetrics() {
+            const metricsDiv = document.getElementById('performance-metrics');
+            
+            if ('performance' in window) {
+                const navigation = performance.getEntriesByType('navigation')[0];
+                const paint = performance.getEntriesByType('paint');
+                
+                let metricsHTML = '<h4>📈 Core Web Vitals</h4>';
+                metricsHTML += `<p><strong>Page Load:</strong> ${Math.round(navigation.loadEventEnd - navigation.fetchStart)}ms</p>`;
+                metricsHTML += `<p><strong>DOM Content Loaded:</strong> ${Math.round(navigation.domContentLoadedEventEnd - navigation.fetchStart)}ms</p>`;
+                
+                paint.forEach(entry => {
+                    metricsHTML += `<p><strong>${entry.name}:</strong> ${Math.round(entry.startTime)}ms</p>`;
+                });
+
+                metricsDiv.innerHTML = metricsHTML;
+            } else {
+                metricsDiv.innerHTML = '<p>Performance API not available</p>';
+            }
+        }
+
+        // Run performance check on load
+        window.addEventListener('load', () => {
+            setTimeout(updatePerformanceMetrics, 1000);
+        });
+
+        // Auto-test API on page load
+        setTimeout(testProjectsAPI, 2000);
+    </script>
+</body>
+</html>

@@ -1,0 +1,113 @@
+{
+    "name": "BookLocal Daily Standup Automation",
+    "nodes": [
+        {
+            "parameters": {
+                "rule": {
+                    "interval": [
+                        {
+                            "field": "cronExpression",
+                            "expression": "0 9 * * 1-5"
+                        }
+                    ]
+                }
+            },
+            "id": "daily-standup-trigger",
+            "name": "Daily at 9 AM (Weekdays)",
+            "type": "n8n-nodes-base.cron",
+            "typeVersion": 1,
+            "position": [
+                200,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "url": "http://localhost:3005/api/team/standup",
+                "options": {
+                    "headers": {
+                        "Content-Type": "application/json"
+                    }
+                }
+            },
+            "id": "get-standup-report",
+            "name": "Generate Standup Report",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 1,
+            "position": [
+                400,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "url": "https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK",
+                "options": {
+                    "headers": {
+                        "Content-Type": "application/json"
+                    }
+                },
+                "sendBody": true,
+                "bodyContentType": "json",
+                "jsonParameters": true,
+                "parametersJson": "={{JSON.stringify({text: `🌅 BookLocal AI Daily Standup - ${$json.date}\\n\\n**Team Status**: ${$json.team_status}\\n**Active Projects**: ${$json.active_projects.length}\\n**Achievements**: ${$json.achievements.join('\\n• ')}\\n**Next Priorities**: ${$json.next_priorities.join('\\n• ')}\\n\\n*All agents operational and ready for collaboration*`})}}"
+            },
+            "id": "slack-standup-report",
+            "name": "Send Standup to Slack",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 1,
+            "position": [
+                600,
+                200
+            ]
+        },
+        {
+            "parameters": {
+                "to": "your-email@domain.com",
+                "subject": "BookLocal AI Daily Team Report",
+                "text": "Daily team status and project updates",
+                "html": "=<div><h2>🤖 BookLocal AI Team Report</h2><p><strong>Date:</strong> {{$json.date}}</p><p><strong>Team Health:</strong> {{$json.team_status}}</p><h3>Active Projects ({{$json.active_projects.length}})</h3><ul>{{$json.active_projects.map(p => `<li>${p.query} - ${p.status}</li>`).join('')}}</ul><h3>Recent Achievements</h3><ul>{{$json.achievements.map(a => `<li>${a}</li>`).join('')}}</ul><h3>Next Priorities</h3><ul>{{$json.next_priorities.map(p => `<li>${p}</li>`).join('')}}</ul></div>"
+            },
+            "id": "email-report",
+            "name": "Email Daily Report",
+            "type": "n8n-nodes-base.emailSend",
+            "typeVersion": 1,
+            "position": [
+                600,
+                400
+            ]
+        }
+    ],
+    "connections": {
+        "Daily at 9 AM (Weekdays)": {
+            "main": [
+                [
+                    {
+                        "node": "Generate Standup Report",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Generate Standup Report": {
+            "main": [
+                [
+                    {
+                        "node": "Send Standup to Slack",
+                        "type": "main",
+                        "index": 0
+                    },
+                    {
+                        "node": "Email Daily Report",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "active": true,
+    "settings": {},
+    "versionId": "1"
+}

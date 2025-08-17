@@ -2,9 +2,7 @@
 import Stripe from 'stripe';
 import { getSupabase } from './supabaseClient';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
-  apiVersion: '2025-07-30.basil',
-});
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '');
 
 export interface SubscriptionPlan {
   id: string;
@@ -56,6 +54,10 @@ export async function createCheckoutSession(
   cancelUrl: string
 ): Promise<string> {
   try {
+    if (!userId || !planId || !successUrl || !cancelUrl) {
+      throw new Error('Missing required parameters for checkout session');
+    }
+
     const plan = SUBSCRIPTION_PLANS.find(p => p.id === planId);
     if (!plan) {
       throw new Error(`Invalid plan ID: ${planId}`);
@@ -80,6 +82,10 @@ export async function createCheckoutSession(
       allow_promotion_codes: true,
       billing_address_collection: 'required',
     });
+
+    if (!session.id) {
+      throw new Error('Failed to create checkout session');
+    }
 
     return session.id;
   } catch (error) {
@@ -133,20 +139,16 @@ export async function handleSubscriptionWebhook(event: Stripe.Event): Promise<vo
         break;
       }
       case 'invoice.payment_succeeded': {
-        const invoice = event.data.object as (Stripe.Invoice & { subscription?: string | { id: string } }); 
-        const subscriptionId = typeof invoice.subscription === 'string' 
-          ? invoice.subscription 
-          : invoice.subscription?.id;
+        const invoice = event.data.object as { subscription?: string; id?: string };
+        const subscriptionId = invoice.subscription;
         if (subscriptionId && invoice.id) {
           await markPaymentSucceeded(subscriptionId, invoice.id);
         }
         break;
       }
       case 'invoice.payment_failed': {
-        const invoice = event.data.object as (Stripe.Invoice & { subscription?: string | { id: string } }); 
-        const subscriptionId = typeof invoice.subscription === 'string' 
-          ? invoice.subscription 
-          : invoice.subscription?.id;
+        const invoice = event.data.object as { subscription?: string; id?: string };
+        const subscriptionId = invoice.subscription;
         if (subscriptionId && invoice.id) {
           await markPaymentFailed(subscriptionId, invoice.id);
         }
@@ -165,39 +167,49 @@ export async function handleSubscriptionWebhook(event: Stripe.Event): Promise<vo
  * Update subscription in database
  */
 async function updateSubscriptionInDatabase(subscription: Stripe.Subscription): Promise<void> {
-  const supabase = getSupabase();
-  
-  const customerId = subscription.customer as string;
-  const customer = await stripe.customers.retrieve(customerId);
-  
-  if (customer.deleted) {
-    throw new Error(`Customer ${customerId} was deleted`);
+  try {
+    const supabase = getSupabase();
+    
+    const customerId = subscription.customer as string;
+    const customer = await stripe.customers.retrieve(customerId);
+    
+    if (customer.deleted) {
+      throw new Error(`Customer ${customerId} was deleted`);
+    }
+
+    const userId = customer.metadata?.userId;
+    if (!userId) {
+      throw new Error(`No userId found for customer ${customerId}`);
+    }
+
+    const plan = SUBSCRIPTION_PLANS.find(p => 
+      subscription.items.data.some(item => item.price.id === p.stripePriceId)
+    );
+
+    const { error } = await supabase
+      .from('subscriptions')
+      .upsert({
+        user_id: userId,
+        stripe_subscription_id: subscription.id,
+        stripe_customer_id: customerId,
+        status: subscription.status,
+        plan_id: plan?.id || 'unknown',
+        current_period_start: new Date((subscription as unknown as { current_period_start: number }).current_period_start * 1000).toISOString(),
+        current_period_end: new Date((subscription as unknown as { current_period_end: number }).current_period_end * 1000).toISOString(),
+        cancel_at_period_end: subscription.cancel_at_period_end || false,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      }, {
+        onConflict: 'stripe_subscription_id',
+      });
+
+    if (error) {
+      throw error;
+    }
+  } catch (error) {
+    console.error('Error updating subscription in database:', error);
+    throw error;
   }
-
-  const userId = customer.metadata?.userId;
-  if (!userId) {
-    throw new Error(`No userId found for customer ${customerId}`);
-  }
-
-  const plan = SUBSCRIPTION_PLANS.find(p => 
-    subscription.items.data.some(item => item.price.id === p.stripePriceId)
-  );
-
-  await supabase
-    .from('subscriptions')
-    .upsert({
-      user_id: userId,
-      stripe_subscription_id: subscription.id,
-      stripe_customer_id: customerId,
-      status: subscription.status,
-      plan_id: plan?.id || 'unknown',
-      current_period_start: new Date((subscription as unknown as { current_period_start: number }).current_period_start * 1000).toISOString(),
-      current_period_end: new Date((subscription as unknown as { current_period_end: number }).current_period_end * 1000).toISOString(),
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    }, {
-      onConflict: 'stripe_subscription_id',
-    });
 }
 
 /**
@@ -278,7 +290,7 @@ export async function getUserSubscription(userId: string): Promise<UserSubscript
     throw error;
   }
 
-  return data;
+  return data as UserSubscription | null;
 }
 
 /**

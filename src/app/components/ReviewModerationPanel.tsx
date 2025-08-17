@@ -23,7 +23,7 @@ export default function ReviewModerationPanel() {
   async function fetchReviews() {
     setLoading(true);
     const { data, error } = await supabase.from('reviews').select('*').order('created_at', { ascending: false });
-    if (!error) setReviews(data || []);
+    if (!error) setReviews((data as unknown as Review[]) || []);
     setLoading(false);
   }
 
@@ -31,7 +31,7 @@ export default function ReviewModerationPanel() {
     fetchReviews();
     // Real-time subscription
     const channel = supabase.channel('realtime:reviews')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'reviews' }, (payload) => {
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'reviews' }, () => {
         fetchReviews();
       })
       .subscribe();

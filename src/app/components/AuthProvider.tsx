@@ -31,7 +31,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           .select('role')
           .eq('id', data.session.user.id)
           .single();
-        setRole(profile?.role || 'user');
+        setRole((profile as { role?: string })?.role || 'user');
       } else {
         setRole(null);
       }
@@ -46,7 +46,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           .select('role')
           .eq('id', session.user.id)
           .single()
-          .then(({ data: profile }) => setRole(profile?.role || 'user'));
+          .then(({ data: profile }) => setRole((profile as { role?: string })?.role || 'user'));
       } else {
         setRole(null);
       }

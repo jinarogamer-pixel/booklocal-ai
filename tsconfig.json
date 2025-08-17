@@ -26,6 +26,9 @@
     "paths": {
       "@/*": [
         "./src/*"
+      ],
+      "@/ai/*": [
+        "./ai/*"
       ]
     },
     "allowSyntheticDefaultImports": true,
@@ -44,7 +47,7 @@
   "exclude": [
     "node_modules",
     ".next",
-    "supabase/functions",
+    "supabase/**",
     "booklocal-ai_for_claude.tar.gz",
     "booklocal-ai/public/**",
     "public/booklocal-ai_for_claude/**"

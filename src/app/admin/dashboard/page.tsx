@@ -107,7 +107,7 @@ export default function AdminDashboardPage() {
     return () => {
       if (refreshInterval) clearInterval(refreshInterval);
     };
-  }, []);
+  }, [refreshInterval]);
 
   // Manual refresh
   const handleRefresh = () => {

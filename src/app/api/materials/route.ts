@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
       providers: mockProviders
     });
     
-  } catch (err) {
+  } catch {
     return NextResponse.json({ 
       error: 'API error',
       providers: []

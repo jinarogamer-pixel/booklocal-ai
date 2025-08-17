@@ -43,8 +43,8 @@ export function usePaymentsDashboard() {
           .select('*')
           .eq('user_id', user!.id);
         if (methodsError) throw methodsError;
-        setPayouts(payoutsData || []);
-        setMethods(methodsData || []);
+        setPayouts((payoutsData as unknown as Payout[]) || []);
+        setMethods((methodsData as unknown as PaymentMethod[]) || []);
       } catch (err: unknown) {
         if (err && typeof err === 'object' && 'message' in err) {
           setError((err as { message?: string }).message || 'Failed to load payment data.');

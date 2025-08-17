@@ -1,0 +1,32 @@
+/* Mobile optimizations for FloatingControls */
+@media (max-width: 768px) {
+  aside[aria-label="Visualizer controls"] {
+    right: 0.75rem;
+    top: auto;
+    bottom: 1rem;
+    width: calc(100vw - 1.5rem);
+    background: rgba(0,0,0,0.8);
+    backdrop-filter: blur(20px);
+  }
+}
+
+/* Premium animations */
+.btn-primary {
+  @apply bg-gradient-to-r from-emerald-500 to-blue-500 hover:from-emerald-600 hover:to-blue-600 text-white font-semibold px-6 py-3 rounded-xl transition-all duration-200 transform hover:scale-105;
+}
+
+/* Loading spinner for texture failures */
+.texture-loading {
+  @apply animate-pulse bg-gradient-to-r from-neutral-800 to-neutral-700;
+}
+
+/* Performance optimization for 3D canvas */
+.three-canvas {
+  transform: translateZ(0);
+  will-change: transform;
+}
+
+/* Premium glass card effect */
+.glass-card {
+  @apply bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 shadow-2xl;
+}

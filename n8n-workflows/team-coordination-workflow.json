@@ -1,0 +1,278 @@
+{
+    "name": "BookLocal AI Team Coordination",
+    "nodes": [
+        {
+            "parameters": {
+                "httpMethod": "POST",
+                "path": "team-trigger",
+                "options": {}
+            },
+            "id": "webhook-team-trigger",
+            "name": "Team Trigger Webhook",
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 1,
+            "position": [
+                200,
+                300
+            ],
+            "webhookId": "team-coordination"
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "string": [
+                        {
+                            "value1": "={{$json.query}}",
+                            "operation": "contains",
+                            "value2": "performance"
+                        }
+                    ]
+                }
+            },
+            "id": "performance-check",
+            "name": "Performance Issue?",
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 1,
+            "position": [
+                400,
+                200
+            ]
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "string": [
+                        {
+                            "value1": "={{$json.query}}",
+                            "operation": "contains",
+                            "value2": "security"
+                        }
+                    ]
+                }
+            },
+            "id": "security-check",
+            "name": "Security Issue?",
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 1,
+            "position": [
+                400,
+                400
+            ]
+        },
+        {
+            "parameters": {
+                "url": "http://localhost:3005/api/team/query",
+                "options": {
+                    "headers": {
+                        "Content-Type": "application/json"
+                    }
+                },
+                "sendBody": true,
+                "bodyContentType": "json",
+                "jsonParameters": true,
+                "parametersJson": "={{JSON.stringify({query: $json.query, context: $json.context, priority: 'high', team_required: ['performance-engineer', 'tech-lead', 'frontend-dev']})}}"
+            },
+            "id": "performance-team",
+            "name": "Assign Performance Team",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 1,
+            "position": [
+                600,
+                100
+            ]
+        },
+        {
+            "parameters": {
+                "url": "http://localhost:3005/api/team/query",
+                "options": {
+                    "headers": {
+                        "Content-Type": "application/json"
+                    }
+                },
+                "sendBody": true,
+                "bodyContentType": "json",
+                "jsonParameters": true,
+                "parametersJson": "={{JSON.stringify({query: $json.query, context: $json.context, priority: 'critical', team_required: ['security-expert', 'tech-lead', 'backend-dev']})}}"
+            },
+            "id": "security-team",
+            "name": "Assign Security Team",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 1,
+            "position": [
+                600,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "url": "http://localhost:3005/api/team/query",
+                "options": {
+                    "headers": {
+                        "Content-Type": "application/json"
+                    }
+                },
+                "sendBody": true,
+                "bodyContentType": "json",
+                "jsonParameters": true,
+                "parametersJson": "={{JSON.stringify({query: $json.query, context: $json.context, priority: 'medium', team_required: ['product-owner', 'tech-lead']})}}"
+            },
+            "id": "general-team",
+            "name": "Assign General Team",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 1,
+            "position": [
+                600,
+                500
+            ]
+        },
+        {
+            "parameters": {
+                "url": "https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK",
+                "options": {
+                    "headers": {
+                        "Content-Type": "application/json"
+                    }
+                },
+                "sendBody": true,
+                "bodyContentType": "json",
+                "jsonParameters": true,
+                "parametersJson": "={{JSON.stringify({text: `🤖 BookLocal AI Team Assigned\\n**Query**: ${$json.collaboration.query}\\n**Team**: ${$json.collaboration.agents.join(', ')}\\n**Status**: Active collaboration started`})}}"
+            },
+            "id": "slack-notification",
+            "name": "Slack Team Notification",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 1,
+            "position": [
+                800,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "url": "http://localhost:3000/api/analytics/events",
+                "options": {
+                    "headers": {
+                        "Content-Type": "application/json"
+                    }
+                },
+                "sendBody": true,
+                "bodyContentType": "json",
+                "jsonParameters": true,
+                "parametersJson": "={{JSON.stringify({event: 'team_coordination_triggered', query: $json.collaboration.query, agents: $json.collaboration.agents, timestamp: new Date()})}}"
+            },
+            "id": "analytics-tracking",
+            "name": "Track Team Event",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 1,
+            "position": [
+                800,
+                500
+            ]
+        }
+    ],
+    "connections": {
+        "Team Trigger Webhook": {
+            "main": [
+                [
+                    {
+                        "node": "Performance Issue?",
+                        "type": "main",
+                        "index": 0
+                    },
+                    {
+                        "node": "Security Issue?",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Performance Issue?": {
+            "main": [
+                [
+                    {
+                        "node": "Assign Performance Team",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Assign General Team",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Security Issue?": {
+            "main": [
+                [
+                    {
+                        "node": "Assign Security Team",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Assign General Team",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Assign Performance Team": {
+            "main": [
+                [
+                    {
+                        "node": "Slack Team Notification",
+                        "type": "main",
+                        "index": 0
+                    },
+                    {
+                        "node": "Track Team Event",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Assign Security Team": {
+            "main": [
+                [
+                    {
+                        "node": "Slack Team Notification",
+                        "type": "main",
+                        "index": 0
+                    },
+                    {
+                        "node": "Track Team Event",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Assign General Team": {
+            "main": [
+                [
+                    {
+                        "node": "Slack Team Notification",
+                        "type": "main",
+                        "index": 0
+                    },
+                    {
+                        "node": "Track Team Event",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "active": true,
+    "settings": {},
+    "versionId": "1"
+}

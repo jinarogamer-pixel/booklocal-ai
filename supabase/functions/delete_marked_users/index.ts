@@ -1,6 +1,10 @@
 // Edge Function: Securely delete users marked for deletion
 
+// @ts-ignore Deno-specific import
+const Deno = globalThis.Deno;
+// @ts-ignore Deno-specific import
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
+// @ts-ignore Deno-specific import
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL');
@@ -25,7 +29,7 @@ serve(async (req) => {
     }
 
     let deletedCount = 0;
-    const errors = [];
+    const errors: Array<{ user: string; error: string }> = [];
 
     for (const profile of profiles || []) {
       try {
@@ -46,7 +50,7 @@ serve(async (req) => {
         if (auditError) throw new Error(`Audit log error: ${auditError.message}`);
 
         deletedCount++;
-      } catch (err) {
+      } catch (err: any) {
         errors.push({ user: profile.id, error: err.message });
       }
     }

@@ -51,10 +51,10 @@ export function useProviderAnalytics() {
           .eq('provider_id', user.id);
         if (reviewsError) throw reviewsError;
         setData({
-          bookings: bookings || [],
-          reviews: reviews || [],
-          revenue: (bookings || []).reduce((sum: number, b: Booking) => sum + (b.amount || 0), 0),
-          avgRating: reviews && reviews.length > 0 ? (reviews.reduce((sum: number, r: Review) => sum + (r.rating || 0), 0) / reviews.length).toFixed(2) : 'N/A',
+          bookings: (bookings as unknown as Booking[]) || [],
+          reviews: (reviews as unknown as Review[]) || [],
+          revenue: ((bookings as unknown as Booking[]) || []).reduce((sum: number, b: Booking) => sum + (b.amount || 0), 0),
+          avgRating: reviews && reviews.length > 0 ? (((reviews as unknown as Review[]).reduce((sum: number, r: Review) => sum + (r.rating || 0), 0) / reviews.length).toFixed(2)) : 'N/A',
         });
       } catch (err: unknown) {
         if (err && typeof err === 'object' && 'message' in err) {

@@ -1,5 +1,9 @@
-// Edge Function: Securely delete users marked for deletion
+// Deno environment variables and serve function for Edge Functions
+// @ts-ignore Deno-specific import
+const Deno = globalThis.Deno;
+// @ts-ignore Deno-specific import
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
+// @ts-ignore Deno-specific import
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL');

@@ -7,7 +7,6 @@ const redis = new Redis({
 });
 
 export async function checkRateLimit(key: string, limit = 100, windowSeconds = 900) {
-  const now = Math.floor(Date.now() / 1000);
   const res = await redis.eval(
     `local current = redis.call('INCR', KEYS[1])
      if tonumber(current) == 1 then

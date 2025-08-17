@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import "./globals.css";
 import ErrorBoundary from "./components/ErrorBoundary";
+import "./globals.css";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -41,40 +41,40 @@ export const metadata: Metadata = {
 };
 
 
-import NavBar from "./components/NavBar";
-import { AuthProvider } from "./components/AuthProvider";
-import { NotificationProvider } from "../components/NotificationProvider";
-import DarkModeToggle from "./components/DarkModeToggle";
 import CookieBanner from "@/components/CookieBanner";
-import Link from "next/link";
+import NavBarMinimal from "@/components/NavBarMinimal";
 import { cookies } from "next/headers";
+import Link from "next/link";
+import { NotificationProvider } from "../components/NotificationProvider";
+import { AuthProvider } from "./components/AuthProvider";
 
 // Client-only listener moved to a dedicated component
 import ClientErrorListener from '@/components/ClientErrorListener';
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   // ClientErrorListener takes care of window-level error listeners
-   let consent = false;
+  let consent = false;
   try {
     const cookieStore = await cookies();
     consent = cookieStore.get('bl_consent')?.value?.includes('analytics=true') ?? false;
-  } catch {}
+  } catch { }
   return (
     <html lang="en">
       <head>
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
+        <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400..700&family=Geist+Mono:wght@400..700&family=Geist+Sans:wght@400..800&display=swap" rel="stylesheet" />
         {/* Example: gate analytics */}
         {consent && (
           // <script defer src="/* your analytics script */"></script>
           <></>
         )}
       </head>
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen bg-black text-white`}>
         <NotificationProvider>
           <AuthProvider>
             {/* Mount client-only global error listener */}
             <ClientErrorListener />
-            <DarkModeToggle />
-            <NavBar />
+            <NavBarMinimal />
             <ErrorBoundary>
               {children}
             </ErrorBoundary>

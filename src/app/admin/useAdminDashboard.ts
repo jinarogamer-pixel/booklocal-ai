@@ -35,8 +35,8 @@ export function useAdminDashboard() {
         setLoading(false);
         return;
       }
-      setUsers(usersData || []);
-      setProviders(providersData || []);
+      setUsers((usersData as unknown as User[]) || []);
+      setProviders((providersData as unknown as Provider[]) || []);
       setLoading(false);
     }
     fetchData();

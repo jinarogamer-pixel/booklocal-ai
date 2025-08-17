@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
+import Link from 'next/link';
 import { 
   Shield, 
   Clock, 
@@ -23,9 +24,14 @@ function HeroSection() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Connect to real lead capture system
-    console.log('Lead captured:', formData);
-    alert('Thanks! We\'ll contact you within 24 hours with contractor matches.');
+    // Redirect to full booking page with pre-filled data
+    const params = new URLSearchParams({
+      service: formData.serviceType,
+      zip: formData.zipCode,
+      email: formData.email,
+      phone: formData.phone
+    });
+    window.location.href = `/book?${params.toString()}`;
   };
 
   return (
@@ -285,7 +291,7 @@ export default function LeanMVPPage() {
             <div className="text-2xl font-bold text-blue-600">BookLocal</div>
             <div className="hidden md:flex space-x-6">
               <a href="#how-it-works" className="text-gray-600 hover:text-gray-900">How It Works</a>
-              <a href="#contractors" className="text-gray-600 hover:text-gray-900">For Contractors</a>
+              <Link href="/contractor-signup" className="text-gray-600 hover:text-gray-900">For Contractors</Link>
               <a href="#contact" className="text-gray-600 hover:text-gray-900">Contact</a>
             </div>
           </div>

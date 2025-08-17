@@ -30,7 +30,7 @@ import {
   RotateCcw,
   ZoomIn,
   ZoomOut,
-  Move3d,
+
   Layers
 } from 'lucide-react';
 
@@ -42,7 +42,7 @@ interface PortfolioProject {
   beforeImages: string[];
   afterImages: string[];
   videoUrl?: string;
-  threeDTourUrl?: string;
+
   completionDate: string;
   location: string;
   budget: number;
@@ -76,7 +76,7 @@ const mockProjects: PortfolioProject[] = [
     beforeImages: ['/api/placeholder/600/400', '/api/placeholder/600/400'],
     afterImages: ['/api/placeholder/600/400', '/api/placeholder/600/400'],
     videoUrl: '/videos/kitchen-timelapse.mp4',
-    threeDTourUrl: '/tours/kitchen-3d',
+
     completionDate: '2024-01-15',
     location: 'San Francisco, CA',
     budget: 45000,
@@ -186,7 +186,7 @@ export default function ProfessionalPortfolioSystem() {
             </span>
           </h1>
           <p className="text-xl text-white/80 max-w-3xl mx-auto">
-            Showcase your best work with interactive galleries, time-lapse videos, and immersive 3D tours. 
+            Showcase your best work with interactive galleries and project documentation. 
             Build trust and win more clients with compelling project presentations.
           </p>
         </motion.div>
@@ -379,7 +379,7 @@ export default function ProfessionalPortfolioSystem() {
                   {[
                     { id: 'gallery', label: 'Gallery', icon: Camera },
                     { id: 'video', label: 'Time-lapse', icon: Video },
-                    { id: '3d', label: '3D Tour', icon: Move3d },
+
                     { id: 'testimonials', label: 'Testimonials', icon: Star }
                   ].map((tab) => (
                     <button
@@ -500,24 +500,7 @@ export default function ProfessionalPortfolioSystem() {
                     </motion.div>
                   )}
 
-                  {activeTab === '3d' && (
-                    <motion.div
-                      key="3d"
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -20 }}
-                      className="aspect-video bg-gradient-to-br from-blue-900 to-purple-900 rounded-2xl flex items-center justify-center"
-                    >
-                      <div className="text-center">
-                        <Move3d className="w-16 h-16 text-white/60 mx-auto mb-4" />
-                        <h3 className="text-xl font-bold text-white mb-2">3D Virtual Tour</h3>
-                        <p className="text-white/70 mb-6">Experience this project in immersive 3D</p>
-                        <button className="btn-quantum">
-                          Launch 3D Tour
-                        </button>
-                      </div>
-                    </motion.div>
-                  )}
+
 
                   {activeTab === 'testimonials' && selectedProject.clientTestimonial && (
                     <motion.div

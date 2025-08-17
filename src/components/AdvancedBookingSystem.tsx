@@ -310,7 +310,7 @@ export default function AdvancedBookingSystem() {
             ].map((tab) => (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id as any)}
+                onClick={() => setActiveTab(tab.id as 'booking' | 'project' | 'calendar')}
                 className={`flex items-center space-x-2 px-6 py-3 rounded-2xl transition-all duration-300 ${
                   activeTab === tab.id
                     ? 'bg-purple-500 text-white shadow-lg'

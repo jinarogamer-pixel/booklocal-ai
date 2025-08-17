@@ -42,8 +42,7 @@ const nextConfig = {
     ignoreBuildErrors: true,
   },
   eslint: {
-    // Allow production builds to successfully complete even with ESLint errors
-    ignoreDuringBuilds: true,
+    ignoreDuringBuilds: true, // Temporarily disable for lean MVP deployment
   },
   
   async headers() {
@@ -88,6 +87,7 @@ const nextConfig = {
 
   experimental: {
     optimizeCss: true,
+    optimizePackageImports: ['lucide-react', 'framer-motion'],
   },
 };
 

@@ -1,478 +1,771 @@
-// BookLocal Fraud Detection System
-// Real-time fraud detection and risk assessment
+import { supabase } from './supabase';
 
-export interface FraudAnalysis {
-  riskScore: number; // 0-1, where 1 is highest risk
-  riskLevel: 'low' | 'medium' | 'high' | 'critical';
-  flags: FraudFlag[];
-  recommendations: string[];
-  requiresManualReview: boolean;
-  allowTransaction: boolean;
+// Types for fraud detection
+export interface FraudScore {
+  score: number; // 0-100, higher = more suspicious
+  risk_level: 'low' | 'medium' | 'high' | 'critical';
+  factors: FraudFactor[];
+  recommended_action: 'approve' | 'review' | 'decline' | 'block';
 }
 
-export interface FraudFlag {
+export interface FraudFactor {
   type: string;
-  severity: 'low' | 'medium' | 'high' | 'critical';
   description: string;
-  score: number;
+  weight: number;
+  value: any;
 }
 
-export interface TransactionContext {
-  amount: number;
-  customerId: string;
-  contractorId: string;
-  paymentMethodId: string;
-  ipAddress?: string;
-  userAgent?: string;
-  deviceFingerprint?: string;
-  location?: {
-    lat: number;
-    lng: number;
-    country: string;
-    state: string;
-    city: string;
-  };
-  timestamp: Date;
+export interface TransactionRisk {
+  transaction_id: string;
+  user_id: string;
+  risk_score: number;
+  risk_factors: string[];
+  status: 'pending' | 'approved' | 'declined' | 'under_review';
+  reviewed_by?: string;
+  reviewed_at?: string;
+  notes?: string;
 }
 
-export interface UserHistory {
-  totalTransactions: number;
-  totalAmount: number;
-  averageAmount: number;
-  lastTransactionDate?: Date;
-  failedTransactions: number;
-  chargebacks: number;
-  disputes: number;
-  accountAge: number; // days
-  verificationLevel: 'none' | 'basic' | 'verified' | 'premium';
-}
-
-// Fraud Detection Engine
-export class FraudDetector {
-  private static readonly RISK_THRESHOLDS = {
-    LOW: 0.3,
-    MEDIUM: 0.6,
-    HIGH: 0.8,
-    CRITICAL: 0.9
+// Main Fraud Detection Service
+export class FraudDetectionService {
+  private riskThresholds = {
+    low: 25,
+    medium: 50,
+    high: 75,
+    critical: 90
   };
 
-  private static readonly AMOUNT_THRESHOLDS = {
-    SMALL: 10000, // $100
-    MEDIUM: 50000, // $500
-    LARGE: 200000, // $2000
-    VERY_LARGE: 1000000 // $10000
-  };
-
-  static async analyzeTransaction(
-    context: TransactionContext,
-    customerHistory?: UserHistory,
-    contractorHistory?: UserHistory
-  ): Promise<FraudAnalysis> {
-    const flags: FraudFlag[] = [];
+  /**
+   * Analyze a transaction for fraud risk
+   */
+  async analyzeTransaction(transactionData: {
+    user_id: string;
+    amount: number;
+    payment_method_id: string;
+    booking_id?: string;
+    ip_address?: string;
+    user_agent?: string;
+    billing_address?: any;
+  }): Promise<FraudScore> {
+    const factors: FraudFactor[] = [];
     let totalScore = 0;
 
-    // Amount-based analysis
-    const amountFlags = this.analyzeAmount(context.amount, customerHistory);
-    flags.push(...amountFlags);
-    totalScore += amountFlags.reduce((sum, flag) => sum + flag.score, 0);
+    try {
+      // 1. User History Analysis
+      const userHistoryScore = await this.analyzeUserHistory(transactionData.user_id);
+      factors.push(...userHistoryScore.factors);
+      totalScore += userHistoryScore.score;
 
-    // Velocity analysis
-    const velocityFlags = await this.analyzeVelocity(context, customerHistory);
-    flags.push(...velocityFlags);
-    totalScore += velocityFlags.reduce((sum, flag) => sum + flag.score, 0);
+      // 2. Transaction Amount Analysis
+      const amountScore = await this.analyzeTransactionAmount(transactionData.user_id, transactionData.amount);
+      factors.push(...amountScore.factors);
+      totalScore += amountScore.score;
 
-    // Geographic analysis
-    if (context.location && context.ipAddress) {
-      const geoFlags = await this.analyzeGeography(context);
-      flags.push(...geoFlags);
-      totalScore += geoFlags.reduce((sum, flag) => sum + flag.score, 0);
+      // 3. Payment Method Analysis
+      const paymentScore = await this.analyzePaymentMethod(transactionData.payment_method_id, transactionData.user_id);
+      factors.push(...paymentScore.factors);
+      totalScore += paymentScore.score;
+
+      // 4. Geographic Analysis
+      if (transactionData.ip_address) {
+        const geoScore = await this.analyzeGeography(transactionData.user_id, transactionData.ip_address);
+        factors.push(...geoScore.factors);
+        totalScore += geoScore.score;
+      }
+
+      // 5. Device/Browser Analysis
+      if (transactionData.user_agent) {
+        const deviceScore = await this.analyzeDevice(transactionData.user_id, transactionData.user_agent);
+        factors.push(...deviceScore.factors);
+        totalScore += deviceScore.score;
+      }
+
+      // 6. Velocity Analysis (frequency of transactions)
+      const velocityScore = await this.analyzeTransactionVelocity(transactionData.user_id);
+      factors.push(...velocityScore.factors);
+      totalScore += velocityScore.score;
+
+      // 7. Blacklist Check
+      const blacklistScore = await this.checkBlacklists(transactionData);
+      factors.push(...blacklistScore.factors);
+      totalScore += blacklistScore.score;
+
+      // Calculate final score and risk level
+      const finalScore = Math.min(100, Math.max(0, totalScore));
+      const riskLevel = this.calculateRiskLevel(finalScore);
+      const recommendedAction = this.getRecommendedAction(finalScore, factors);
+
+      return {
+        score: finalScore,
+        risk_level: riskLevel,
+        factors,
+        recommended_action: recommendedAction
+      };
+    } catch (error) {
+      console.error('Fraud analysis error:', error);
+      // Return high risk score on error for safety
+      return {
+        score: 85,
+        risk_level: 'high',
+        factors: [{
+          type: 'system_error',
+          description: 'Unable to complete fraud analysis',
+          weight: 85,
+          value: error.message
+        }],
+        recommended_action: 'review'
+      };
     }
-
-    // Device and behavior analysis
-    if (context.deviceFingerprint) {
-      const deviceFlags = await this.analyzeDevice(context);
-      flags.push(...deviceFlags);
-      totalScore += deviceFlags.reduce((sum, flag) => sum + flag.score, 0);
-    }
-
-    // User history analysis
-    if (customerHistory) {
-      const historyFlags = this.analyzeUserHistory(customerHistory);
-      flags.push(...historyFlags);
-      totalScore += historyFlags.reduce((sum, flag) => sum + flag.score, 0);
-    }
-
-    // Contractor analysis
-    if (contractorHistory) {
-      const contractorFlags = this.analyzeContractor(contractorHistory);
-      flags.push(...contractorFlags);
-      totalScore += contractorFlags.reduce((sum, flag) => sum + flag.score, 0);
-    }
-
-    // Time-based analysis
-    const timeFlags = this.analyzeTimingPatterns(context);
-    flags.push(...timeFlags);
-    totalScore += timeFlags.reduce((sum, flag) => sum + flag.score, 0);
-
-    // Normalize score (0-1)
-    const riskScore = Math.min(totalScore, 1.0);
-    
-    // Determine risk level
-    const riskLevel = this.determineRiskLevel(riskScore);
-    
-    // Generate recommendations
-    const recommendations = this.generateRecommendations(flags, riskLevel);
-    
-    // Determine if manual review is required
-    const requiresManualReview = riskScore >= this.RISK_THRESHOLDS.HIGH || 
-                                 flags.some(f => f.severity === 'critical');
-    
-    // Determine if transaction should be allowed
-    const allowTransaction = riskScore < this.RISK_THRESHOLDS.CRITICAL && 
-                            !flags.some(f => f.type === 'stolen_card' || f.type === 'known_fraud');
-
-    return {
-      riskScore,
-      riskLevel,
-      flags,
-      recommendations,
-      requiresManualReview,
-      allowTransaction
-    };
   }
 
-  private static analyzeAmount(amount: number, history?: UserHistory): FraudFlag[] {
-    const flags: FraudFlag[] = [];
+  /**
+   * Analyze user's historical behavior
+   */
+  private async analyzeUserHistory(userId: string): Promise<{ score: number; factors: FraudFactor[] }> {
+    const factors: FraudFactor[] = [];
+    let score = 0;
 
-    // Very large amount flag
-    if (amount > this.AMOUNT_THRESHOLDS.VERY_LARGE) {
-      flags.push({
-        type: 'large_amount',
-        severity: 'high',
-        description: `Transaction amount (${amount / 100}) is unusually large`,
-        score: 0.4
-      });
+    try {
+      // Get user account age
+      const { data: user } = await supabase
+        .from('users')
+        .select('created_at, status, email_verified, phone_verified')
+        .eq('id', userId)
+        .single();
+
+      if (user) {
+        const accountAge = Date.now() - new Date(user.created_at).getTime();
+        const accountAgeDays = accountAge / (1000 * 60 * 60 * 24);
+
+        // New accounts are riskier
+        if (accountAgeDays < 1) {
+          score += 30;
+          factors.push({
+            type: 'new_account',
+            description: 'Account created less than 24 hours ago',
+            weight: 30,
+            value: accountAgeDays
+          });
+        } else if (accountAgeDays < 7) {
+          score += 15;
+          factors.push({
+            type: 'recent_account',
+            description: 'Account created less than 7 days ago',
+            weight: 15,
+            value: accountAgeDays
+          });
+        }
+
+        // Unverified accounts are riskier
+        if (!user.email_verified) {
+          score += 20;
+          factors.push({
+            type: 'unverified_email',
+            description: 'Email address not verified',
+            weight: 20,
+            value: false
+          });
+        }
+
+        if (!user.phone_verified) {
+          score += 10;
+          factors.push({
+            type: 'unverified_phone',
+            description: 'Phone number not verified',
+            weight: 10,
+            value: false
+          });
+        }
+
+        // Suspended accounts
+        if (user.status === 'suspended' || user.status === 'banned') {
+          score += 100;
+          factors.push({
+            type: 'suspended_account',
+            description: 'Account is suspended or banned',
+            weight: 100,
+            value: user.status
+          });
+        }
+      }
+
+      // Get transaction history
+      const { data: transactions } = await supabase
+        .from('transactions')
+        .select('status, amount, created_at')
+        .eq('customer_id', userId)
+        .order('created_at', { ascending: false })
+        .limit(50);
+
+      if (transactions) {
+        const failedTransactions = transactions.filter(t => t.status === 'failed').length;
+        const totalTransactions = transactions.length;
+        
+        if (totalTransactions > 0) {
+          const failureRate = failedTransactions / totalTransactions;
+          
+          if (failureRate > 0.5) {
+            score += 40;
+            factors.push({
+              type: 'high_failure_rate',
+              description: 'High rate of failed transactions',
+              weight: 40,
+              value: failureRate
+            });
+          } else if (failureRate > 0.3) {
+            score += 20;
+            factors.push({
+              type: 'elevated_failure_rate',
+              description: 'Elevated rate of failed transactions',
+              weight: 20,
+              value: failureRate
+            });
+          }
+        }
+
+        // Check for chargebacks
+        const chargebacks = transactions.filter(t => t.status === 'disputed').length;
+        if (chargebacks > 0) {
+          score += chargebacks * 25;
+          factors.push({
+            type: 'chargeback_history',
+            description: 'Previous chargebacks on account',
+            weight: chargebacks * 25,
+            value: chargebacks
+          });
+        }
+      }
+
+    } catch (error) {
+      console.error('User history analysis error:', error);
     }
 
-    // Amount vs history analysis
-    if (history && history.averageAmount > 0) {
-      const ratio = amount / history.averageAmount;
+    return { score, factors };
+  }
+
+  /**
+   * Analyze transaction amount patterns
+   */
+  private async analyzeTransactionAmount(userId: string, amount: number): Promise<{ score: number; factors: FraudFactor[] }> {
+    const factors: FraudFactor[] = [];
+    let score = 0;
+
+    try {
+      // Get user's average transaction amount
+      const { data: transactions } = await supabase
+        .from('transactions')
+        .select('amount')
+        .eq('customer_id', userId)
+        .eq('status', 'succeeded')
+        .limit(20);
+
+      if (transactions && transactions.length > 0) {
+        const amounts = transactions.map(t => t.amount);
+        const avgAmount = amounts.reduce((sum, amt) => sum + amt, 0) / amounts.length;
+        const maxAmount = Math.max(...amounts);
+
+        // Check if this transaction is significantly higher than usual
+        if (amount > avgAmount * 5 && amount > 1000) {
+          score += 25;
+          factors.push({
+            type: 'unusual_amount',
+            description: 'Transaction amount significantly higher than user average',
+            weight: 25,
+            value: { amount, avgAmount, ratio: amount / avgAmount }
+          });
+        }
+
+        // Check if this is the highest amount ever
+        if (amount > maxAmount * 2 && amount > 500) {
+          score += 15;
+          factors.push({
+            type: 'highest_amount',
+            description: 'Highest transaction amount for this user',
+            weight: 15,
+            value: { amount, previousMax: maxAmount }
+          });
+        }
+      }
+
+      // High-value transactions are inherently riskier
+      if (amount > 5000) {
+        score += 20;
+        factors.push({
+          type: 'high_value',
+          description: 'High-value transaction (>$5,000)',
+          weight: 20,
+          value: amount
+        });
+      } else if (amount > 2000) {
+        score += 10;
+        factors.push({
+          type: 'elevated_value',
+          description: 'Elevated-value transaction (>$2,000)',
+          weight: 10,
+          value: amount
+        });
+      }
+
+    } catch (error) {
+      console.error('Amount analysis error:', error);
+    }
+
+    return { score, factors };
+  }
+
+  /**
+   * Analyze payment method risk
+   */
+  private async analyzePaymentMethod(paymentMethodId: string, userId: string): Promise<{ score: number; factors: FraudFactor[] }> {
+    const factors: FraudFactor[] = [];
+    let score = 0;
+
+    try {
+      // Get payment method details
+      const { data: paymentMethod } = await supabase
+        .from('payment_methods')
+        .select('*')
+        .eq('id', paymentMethodId)
+        .single();
+
+      if (paymentMethod) {
+        // New payment methods are riskier
+        const methodAge = Date.now() - new Date(paymentMethod.created_at).getTime();
+        const methodAgeHours = methodAge / (1000 * 60 * 60);
+
+        if (methodAgeHours < 1) {
+          score += 25;
+          factors.push({
+            type: 'new_payment_method',
+            description: 'Payment method added less than 1 hour ago',
+            weight: 25,
+            value: methodAgeHours
+          });
+        } else if (methodAgeHours < 24) {
+          score += 10;
+          factors.push({
+            type: 'recent_payment_method',
+            description: 'Payment method added less than 24 hours ago',
+            weight: 10,
+            value: methodAgeHours
+          });
+        }
+
+        // Unverified payment methods
+        if (!paymentMethod.is_verified) {
+          score += 15;
+          factors.push({
+            type: 'unverified_payment_method',
+            description: 'Payment method not verified',
+            weight: 15,
+            value: false
+          });
+        }
+
+        // Check if this payment method has been used by multiple accounts
+        const { data: usageCount } = await supabase
+          .from('payment_methods')
+          .select('user_id')
+          .eq('external_id', paymentMethod.external_id);
+
+        if (usageCount && usageCount.length > 1) {
+          const uniqueUsers = new Set(usageCount.map(pm => pm.user_id));
+          if (uniqueUsers.size > 1) {
+            score += 30;
+            factors.push({
+              type: 'shared_payment_method',
+              description: 'Payment method used by multiple accounts',
+              weight: 30,
+              value: uniqueUsers.size
+            });
+          }
+        }
+      }
+
+    } catch (error) {
+      console.error('Payment method analysis error:', error);
+    }
+
+    return { score, factors };
+  }
+
+  /**
+   * Analyze geographic patterns
+   */
+  private async analyzeGeography(userId: string, ipAddress: string): Promise<{ score: number; factors: FraudFactor[] }> {
+    const factors: FraudFactor[] = [];
+    let score = 0;
+
+    try {
+      // Get IP geolocation (would need a service like MaxMind)
+      // For now, we'll use a simple check
       
-      if (ratio > 10) {
-        flags.push({
-          type: 'amount_anomaly',
-          severity: 'medium',
-          description: `Amount is ${ratio.toFixed(1)}x larger than user's average`,
-          score: 0.3
-        });
-      } else if (ratio > 20) {
-        flags.push({
-          type: 'amount_anomaly',
-          severity: 'high',
-          description: `Amount is ${ratio.toFixed(1)}x larger than user's average`,
-          score: 0.5
+      // Get user's previous IP addresses
+      const { data: loginAttempts } = await supabase
+        .from('login_attempts')
+        .select('ip_address, created_at')
+        .eq('email', userId) // This should be email, need to adjust
+        .eq('success', true)
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+      if (loginAttempts && loginAttempts.length > 0) {
+        const recentIPs = loginAttempts.map(attempt => attempt.ip_address);
+        
+        // Check if this is a new IP address
+        if (!recentIPs.includes(ipAddress)) {
+          score += 15;
+          factors.push({
+            type: 'new_ip_address',
+            description: 'Transaction from new IP address',
+            weight: 15,
+            value: ipAddress
+          });
+        }
+      }
+
+      // Check against known high-risk IP ranges (VPNs, proxies, etc.)
+      // This would require a database of known risky IPs
+      if (await this.isHighRiskIP(ipAddress)) {
+        score += 35;
+        factors.push({
+          type: 'high_risk_ip',
+          description: 'Transaction from high-risk IP address (VPN/Proxy)',
+          weight: 35,
+          value: ipAddress
         });
       }
+
+    } catch (error) {
+      console.error('Geography analysis error:', error);
     }
 
-    // First-time large purchase
-    if (history && history.totalTransactions === 0 && amount > this.AMOUNT_THRESHOLDS.MEDIUM) {
-      flags.push({
-        type: 'first_large_purchase',
-        severity: 'medium',
-        description: 'Large first-time purchase from new user',
-        score: 0.25
-      });
-    }
-
-    return flags;
+    return { score, factors };
   }
 
-  private static async analyzeVelocity(
-    context: TransactionContext,
-    history?: UserHistory
-  ): Promise<FraudFlag[]> {
-    const flags: FraudFlag[] = [];
+  /**
+   * Analyze device and browser patterns
+   */
+  private async analyzeDevice(userId: string, userAgent: string): Promise<{ score: number; factors: FraudFactor[] }> {
+    const factors: FraudFactor[] = [];
+    let score = 0;
 
-    // TODO: Implement actual velocity checks
-    // This would require database queries to check:
-    // - Transactions in last hour/day/week
-    // - Multiple payment methods used recently
-    // - Rapid-fire transaction attempts
-
-    // Simulated velocity check
-    if (history && history.lastTransactionDate) {
-      const timeSinceLastTransaction = Date.now() - history.lastTransactionDate.getTime();
-      const minutesSinceLastTransaction = timeSinceLastTransaction / (1000 * 60);
-
-      if (minutesSinceLastTransaction < 5) {
-        flags.push({
-          type: 'high_velocity',
-          severity: 'medium',
-          description: 'Multiple transactions within 5 minutes',
-          score: 0.3
+    try {
+      // Simple user agent analysis
+      const isBot = /bot|crawler|spider|scraper/i.test(userAgent);
+      if (isBot) {
+        score += 50;
+        factors.push({
+          type: 'bot_user_agent',
+          description: 'Request from automated bot/crawler',
+          weight: 50,
+          value: userAgent
         });
       }
+
+      // Check for suspicious user agents
+      const suspiciousPatterns = [
+        /curl/i,
+        /wget/i,
+        /python/i,
+        /postman/i
+      ];
+
+      for (const pattern of suspiciousPatterns) {
+        if (pattern.test(userAgent)) {
+          score += 25;
+          factors.push({
+            type: 'suspicious_user_agent',
+            description: 'Suspicious user agent detected',
+            weight: 25,
+            value: userAgent
+          });
+          break;
+        }
+      }
+
+    } catch (error) {
+      console.error('Device analysis error:', error);
     }
 
-    return flags;
+    return { score, factors };
   }
 
-  private static async analyzeGeography(context: TransactionContext): Promise<FraudFlag[]> {
-    const flags: FraudFlag[] = [];
+  /**
+   * Analyze transaction velocity (frequency)
+   */
+  private async analyzeTransactionVelocity(userId: string): Promise<{ score: number; factors: FraudFactor[] }> {
+    const factors: FraudFactor[] = [];
+    let score = 0;
 
-    if (!context.location) return flags;
+    try {
+      const now = new Date();
+      const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
+      const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
 
-    // High-risk countries (simplified list)
-    const highRiskCountries = ['NG', 'GH', 'PK', 'BD', 'ID'];
-    
-    if (highRiskCountries.includes(context.location.country)) {
-      flags.push({
-        type: 'high_risk_country',
-        severity: 'medium',
-        description: `Transaction from high-risk country: ${context.location.country}`,
-        score: 0.3
-      });
+      // Count transactions in the last hour
+      const { data: recentTransactions } = await supabase
+        .from('transactions')
+        .select('id')
+        .eq('customer_id', userId)
+        .gte('created_at', oneHourAgo.toISOString());
+
+      if (recentTransactions && recentTransactions.length > 3) {
+        score += 30;
+        factors.push({
+          type: 'high_velocity_hour',
+          description: 'Multiple transactions in the last hour',
+          weight: 30,
+          value: recentTransactions.length
+        });
+      }
+
+      // Count transactions in the last day
+      const { data: dailyTransactions } = await supabase
+        .from('transactions')
+        .select('id')
+        .eq('customer_id', userId)
+        .gte('created_at', oneDayAgo.toISOString());
+
+      if (dailyTransactions && dailyTransactions.length > 10) {
+        score += 20;
+        factors.push({
+          type: 'high_velocity_day',
+          description: 'Many transactions in the last 24 hours',
+          weight: 20,
+          value: dailyTransactions.length
+        });
+      }
+
+    } catch (error) {
+      console.error('Velocity analysis error:', error);
     }
 
-    // TODO: Implement more sophisticated geo analysis
-    // - IP geolocation vs billing address mismatch
-    // - Impossible travel (user in different countries within hours)
-    // - VPN/proxy detection
-    // - Known fraud hotspots
-
-    return flags;
+    return { score, factors };
   }
 
-  private static async analyzeDevice(context: TransactionContext): Promise<FraudFlag[]> {
-    const flags: FraudFlag[] = [];
+  /**
+   * Check various blacklists
+   */
+  private async checkBlacklists(transactionData: any): Promise<{ score: number; factors: FraudFactor[] }> {
+    const factors: FraudFactor[] = [];
+    let score = 0;
 
-    // TODO: Implement device fingerprinting analysis
-    // - Known fraudulent devices
-    // - Device spoofing detection
-    // - Browser/OS inconsistencies
-    // - Multiple accounts from same device
+    try {
+      // Check if user is on internal blacklist
+      const { data: blockedUser } = await supabase
+        .from('blocked_users')
+        .select('reason')
+        .eq('user_id', transactionData.user_id)
+        .single();
 
-    return flags;
+      if (blockedUser) {
+        score += 100;
+        factors.push({
+          type: 'blacklisted_user',
+          description: 'User is on internal blacklist',
+          weight: 100,
+          value: blockedUser.reason
+        });
+      }
+
+      // Check if IP is blocked
+      if (transactionData.ip_address) {
+        const { data: blockedIP } = await supabase
+          .from('blocked_ips')
+          .select('reason')
+          .eq('ip_address', transactionData.ip_address)
+          .single();
+
+        if (blockedIP) {
+          score += 80;
+          factors.push({
+            type: 'blacklisted_ip',
+            description: 'IP address is blocked',
+            weight: 80,
+            value: blockedIP.reason
+          });
+        }
+      }
+
+    } catch (error) {
+      console.error('Blacklist check error:', error);
+    }
+
+    return { score, factors };
   }
 
-  private static analyzeUserHistory(history: UserHistory): FraudFlag[] {
-    const flags: FraudFlag[] = [];
-
-    // High chargeback rate
-    if (history.totalTransactions > 5 && history.chargebacks / history.totalTransactions > 0.1) {
-      flags.push({
-        type: 'high_chargeback_rate',
-        severity: 'high',
-        description: `High chargeback rate: ${((history.chargebacks / history.totalTransactions) * 100).toFixed(1)}%`,
-        score: 0.6
-      });
-    }
-
-    // High dispute rate
-    if (history.totalTransactions > 3 && history.disputes / history.totalTransactions > 0.15) {
-      flags.push({
-        type: 'high_dispute_rate',
-        severity: 'medium',
-        description: `High dispute rate: ${((history.disputes / history.totalTransactions) * 100).toFixed(1)}%`,
-        score: 0.4
-      });
-    }
-
-    // High failure rate
-    if (history.totalTransactions > 3 && history.failedTransactions / history.totalTransactions > 0.3) {
-      flags.push({
-        type: 'high_failure_rate',
-        severity: 'medium',
-        description: `High transaction failure rate: ${((history.failedTransactions / history.totalTransactions) * 100).toFixed(1)}%`,
-        score: 0.3
-      });
-    }
-
-    // New account with no verification
-    if (history.accountAge < 1 && history.verificationLevel === 'none') {
-      flags.push({
-        type: 'unverified_new_account',
-        severity: 'medium',
-        description: 'New account with no identity verification',
-        score: 0.25
-      });
-    }
-
-    return flags;
-  }
-
-  private static analyzeContractor(history: UserHistory): FraudFlag[] {
-    const flags: FraudFlag[] = [];
-
-    // New contractor with large booking
-    if (history.accountAge < 30 && history.totalTransactions < 5) {
-      flags.push({
-        type: 'new_contractor',
-        severity: 'low',
-        description: 'New contractor with limited transaction history',
-        score: 0.15
-      });
-    }
-
-    return flags;
-  }
-
-  private static analyzeTimingPatterns(context: TransactionContext): FraudFlag[] {
-    const flags: FraudFlag[] = [];
-
-    const hour = context.timestamp.getHours();
-    
-    // Unusual hours (3 AM - 6 AM)
-    if (hour >= 3 && hour <= 6) {
-      flags.push({
-        type: 'unusual_hours',
-        severity: 'low',
-        description: 'Transaction during unusual hours (3-6 AM)',
-        score: 0.1
-      });
-    }
-
-    return flags;
-  }
-
-  private static determineRiskLevel(score: number): 'low' | 'medium' | 'high' | 'critical' {
-    if (score >= this.RISK_THRESHOLDS.CRITICAL) return 'critical';
-    if (score >= this.RISK_THRESHOLDS.HIGH) return 'high';
-    if (score >= this.RISK_THRESHOLDS.MEDIUM) return 'medium';
+  /**
+   * Calculate risk level based on score
+   */
+  private calculateRiskLevel(score: number): 'low' | 'medium' | 'high' | 'critical' {
+    if (score >= this.riskThresholds.critical) return 'critical';
+    if (score >= this.riskThresholds.high) return 'high';
+    if (score >= this.riskThresholds.medium) return 'medium';
     return 'low';
   }
 
-  private static generateRecommendations(
-    flags: FraudFlag[],
-    riskLevel: string
-  ): string[] {
-    const recommendations: string[] = [];
+  /**
+   * Get recommended action based on score and factors
+   */
+  private getRecommendedAction(score: number, factors: FraudFactor[]): 'approve' | 'review' | 'decline' | 'block' {
+    // Check for critical factors that require immediate blocking
+    const criticalFactors = factors.filter(f => 
+      f.type === 'blacklisted_user' || 
+      f.type === 'suspended_account' ||
+      f.weight >= 80
+    );
 
-    if (riskLevel === 'critical') {
-      recommendations.push('Block transaction immediately');
-      recommendations.push('Flag account for investigation');
-      recommendations.push('Require identity verification');
-    } else if (riskLevel === 'high') {
-      recommendations.push('Require manual review');
-      recommendations.push('Request additional verification');
-      recommendations.push('Limit transaction amount');
-    } else if (riskLevel === 'medium') {
-      recommendations.push('Monitor closely');
-      recommendations.push('Consider additional verification');
-      recommendations.push('Set velocity limits');
+    if (criticalFactors.length > 0) return 'block';
+
+    if (score >= this.riskThresholds.critical) return 'decline';
+    if (score >= this.riskThresholds.high) return 'review';
+    if (score >= this.riskThresholds.medium) return 'review';
+    return 'approve';
+  }
+
+  /**
+   * Check if IP is from a high-risk source
+   */
+  private async isHighRiskIP(ipAddress: string): Promise<boolean> {
+    // This would integrate with services like:
+    // - MaxMind GeoIP2
+    // - IPQualityScore
+    // - VirusTotal
+    // For now, return false
+    return false;
+  }
+
+  /**
+   * Record fraud analysis result
+   */
+  async recordFraudAnalysis(transactionId: string, userId: string, fraudScore: FraudScore): Promise<void> {
+    try {
+      await supabase
+        .from('fraud_analyses')
+        .insert({
+          transaction_id: transactionId,
+          user_id: userId,
+          risk_score: fraudScore.score,
+          risk_level: fraudScore.risk_level,
+          recommended_action: fraudScore.recommended_action,
+          risk_factors: fraudScore.factors.map(f => ({
+            type: f.type,
+            description: f.description,
+            weight: f.weight,
+            value: f.value
+          })),
+          analyzed_at: new Date().toISOString()
+        });
+    } catch (error) {
+      console.error('Error recording fraud analysis:', error);
     }
+  }
 
-    // Specific recommendations based on flags
-    if (flags.some(f => f.type === 'large_amount')) {
-      recommendations.push('Verify large amount with customer');
+  /**
+   * Handle chargeback notification
+   */
+  async handleChargeback(chargebackData: {
+    payment_intent_id: string;
+    amount: number;
+    reason: string;
+    status: string;
+  }): Promise<void> {
+    try {
+      // Find the transaction
+      const { data: transaction } = await supabase
+        .from('transactions')
+        .select('*')
+        .eq('external_id', chargebackData.payment_intent_id)
+        .single();
+
+      if (transaction) {
+        // Update transaction status
+        await supabase
+          .from('transactions')
+          .update({
+            status: 'disputed',
+            metadata: {
+              ...transaction.metadata,
+              chargeback: chargebackData
+            }
+          })
+          .eq('id', transaction.id);
+
+        // Increase user's risk score
+        await this.increaseUserRiskScore(transaction.customer_id, 50);
+
+        // Notify admin team
+        await this.notifyChargebackTeam(transaction, chargebackData);
+
+        // If this user has multiple chargebacks, consider blocking
+        const { data: userChargebacks } = await supabase
+          .from('transactions')
+          .select('id')
+          .eq('customer_id', transaction.customer_id)
+          .eq('status', 'disputed');
+
+        if (userChargebacks && userChargebacks.length >= 3) {
+          await this.blockUser(transaction.customer_id, 'Multiple chargebacks');
+        }
+      }
+    } catch (error) {
+      console.error('Chargeback handling error:', error);
     }
+  }
 
-    if (flags.some(f => f.type === 'high_velocity')) {
-      recommendations.push('Implement velocity controls');
+  /**
+   * Increase user's risk score
+   */
+  private async increaseUserRiskScore(userId: string, points: number): Promise<void> {
+    try {
+      const { data: riskProfile } = await supabase
+        .from('user_risk_profiles')
+        .select('risk_score')
+        .eq('user_id', userId)
+        .single();
+
+      const newScore = (riskProfile?.risk_score || 0) + points;
+
+      await supabase
+        .from('user_risk_profiles')
+        .upsert({
+          user_id: userId,
+          risk_score: Math.min(100, newScore),
+          updated_at: new Date().toISOString()
+        });
+    } catch (error) {
+      console.error('Error updating user risk score:', error);
     }
+  }
 
-    if (flags.some(f => f.type === 'high_risk_country')) {
-      recommendations.push('Enhanced due diligence for high-risk geography');
+  /**
+   * Block a user
+   */
+  private async blockUser(userId: string, reason: string): Promise<void> {
+    try {
+      await supabase
+        .from('blocked_users')
+        .insert({
+          user_id: userId,
+          reason,
+          blocked_at: new Date().toISOString()
+        });
+
+      await supabase
+        .from('users')
+        .update({ status: 'banned' })
+        .eq('id', userId);
+    } catch (error) {
+      console.error('Error blocking user:', error);
     }
+  }
 
-    return [...new Set(recommendations)]; // Remove duplicates
+  private async notifyChargebackTeam(transaction: any, chargebackData: any): Promise<void> {
+    // Implementation would send notification to admin team
+    console.log(`Chargeback received for transaction ${transaction.id}:`, chargebackData);
   }
 }
 
-// Machine Learning-Inspired Scoring
-export class MLFraudScoring {
-  // Simplified ML-inspired scoring based on feature weights
-  private static readonly FEATURE_WEIGHTS = {
-    amount_ratio: 0.15,
-    velocity_score: 0.20,
-    geo_risk: 0.10,
-    device_risk: 0.15,
-    history_score: 0.25,
-    time_risk: 0.05,
-    verification_level: 0.10
-  };
-
-  static calculateMLScore(context: TransactionContext, history?: UserHistory): number {
-    let score = 0;
-
-    // Amount ratio feature
-    if (history && history.averageAmount > 0) {
-      const amountRatio = Math.min(context.amount / history.averageAmount, 10) / 10;
-      score += amountRatio * this.FEATURE_WEIGHTS.amount_ratio;
-    }
-
-    // Velocity feature (simplified)
-    const velocityScore = 0.3; // TODO: Calculate based on recent transactions
-    score += velocityScore * this.FEATURE_WEIGHTS.velocity_score;
-
-    // Geographic risk
-    const geoRisk = context.location?.country === 'US' ? 0.1 : 0.5;
-    score += geoRisk * this.FEATURE_WEIGHTS.geo_risk;
-
-    // History score
-    if (history) {
-      const chargebackRate = history.totalTransactions > 0 ? 
-        history.chargebacks / history.totalTransactions : 0;
-      const historyScore = Math.min(chargebackRate * 10, 1);
-      score += historyScore * this.FEATURE_WEIGHTS.history_score;
-    }
-
-    // Verification level
-    const verificationScore = history?.verificationLevel === 'premium' ? 0 :
-                             history?.verificationLevel === 'verified' ? 0.2 :
-                             history?.verificationLevel === 'basic' ? 0.5 : 1;
-    score += verificationScore * this.FEATURE_WEIGHTS.verification_level;
-
-    return Math.min(score, 1.0);
-  }
-}
-
-// Real-time Monitoring
-export class FraudMonitoring {
-  static async logFraudEvent(
-    analysis: FraudAnalysis,
-    context: TransactionContext,
-    action: 'allowed' | 'blocked' | 'manual_review'
-  ): Promise<void> {
-    const fraudEvent = {
-      timestamp: new Date(),
-      transactionId: `txn_${Date.now()}`,
-      customerId: context.customerId,
-      contractorId: context.contractorId,
-      amount: context.amount,
-      riskScore: analysis.riskScore,
-      riskLevel: analysis.riskLevel,
-      flags: analysis.flags,
-      action,
-      ipAddress: context.ipAddress,
-      userAgent: context.userAgent
-    };
-
-    // TODO: Save to fraud database
-    console.log('Fraud event logged:', fraudEvent);
-
-    // TODO: Send alerts for high-risk events
-    if (analysis.riskLevel === 'critical') {
-      await this.sendFraudAlert(fraudEvent);
-    }
-  }
-
-  private static async sendFraudAlert(event: any): Promise<void> {
-    // TODO: Implement alerting system
-    // - Send to fraud team
-    // - Create ticket in admin system
-    // - Send real-time notifications
-    console.log('FRAUD ALERT:', event);
-  }
-
-  static async updateFraudStats(): Promise<void> {
-    // TODO: Update fraud statistics
-    // - Calculate fraud rates
-    // - Update ML model features
-    // - Generate fraud reports
-  }
-}
-
-// Export main functions
-export { FraudDetector, MLFraudScoring, FraudMonitoring };
+// Export the main service instance
+export const fraudDetectionService = new FraudDetectionService();

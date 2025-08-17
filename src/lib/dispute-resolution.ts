@@ -1,644 +1,866 @@
-// BookLocal Dispute Resolution System
-// Comprehensive dispute handling with automated workflows and mediation
+import { supabase } from './supabase';
+import { escrowService } from './escrow';
 
+// Types for dispute resolution
 export interface Dispute {
   id: string;
-  type: 'quality' | 'payment' | 'cancellation' | 'fraud' | 'service' | 'communication';
-  status: 'open' | 'investigating' | 'mediation' | 'resolved' | 'escalated' | 'closed';
+  booking_id: string;
+  escrow_account_id?: string;
+  customer_id: string;
+  contractor_id: string;
+  initiated_by: 'customer' | 'contractor';
+  type: 'payment' | 'quality' | 'timeline' | 'communication' | 'cancellation' | 'other';
+  status: 'open' | 'in_mediation' | 'escalated' | 'resolved' | 'closed';
   priority: 'low' | 'medium' | 'high' | 'urgent';
-  
-  // Parties involved
-  customerId: string;
-  contractorId: string;
-  bookingId: string;
-  transactionId?: string;
-  
-  // Dispute details
+  amount_disputed?: number;
   title: string;
   description: string;
-  initiatedBy: 'customer' | 'contractor';
-  category: string;
-  subcategory?: string;
-  
-  // Financial details
-  disputedAmount: number;
-  refundRequested: number;
-  escrowId?: string;
-  
-  // Evidence and documentation
   evidence: DisputeEvidence[];
-  timeline: DisputeEvent[];
-  
-  // Resolution details
   resolution?: DisputeResolution;
-  mediatorId?: string;
-  adminNotes?: string;
-  
-  // Timestamps
-  createdAt: Date;
-  updatedAt: Date;
-  resolvedAt?: Date;
-  deadlineAt?: Date;
+  mediator_id?: string;
+  created_at: string;
+  updated_at: string;
+  resolved_at?: string;
+  metadata: Record<string, any>;
 }
 
 export interface DisputeEvidence {
   id: string;
-  type: 'photo' | 'document' | 'video' | 'audio' | 'message' | 'receipt';
-  title: string;
+  dispute_id: string;
+  submitted_by: string;
+  type: 'photo' | 'document' | 'message' | 'receipt' | 'video' | 'other';
+  file_url?: string;
   description: string;
-  fileUrl: string;
-  fileName: string;
-  uploadedBy: 'customer' | 'contractor' | 'admin';
-  uploadedAt: Date;
-  verified: boolean;
-}
-
-export interface DisputeEvent {
-  id: string;
-  type: 'created' | 'evidence_added' | 'response' | 'escalated' | 'mediation_started' | 'resolved';
-  description: string;
-  actorId: string;
-  actorType: 'customer' | 'contractor' | 'admin' | 'system';
-  timestamp: Date;
-  metadata?: Record<string, any>;
+  submitted_at: string;
 }
 
 export interface DisputeResolution {
-  type: 'customer_favor' | 'contractor_favor' | 'partial_refund' | 'service_redo' | 'compromise';
-  outcome: string;
-  financialAdjustment: {
-    customerRefund: number;
-    contractorPayout: number;
-    platformFee: number;
-  };
-  reasoning: string;
-  conditions?: string[];
-  followUpRequired: boolean;
-  satisfactionRating?: {
-    customer: number;
-    contractor: number;
-  };
+  id: string;
+  dispute_id: string;
+  resolution_type: 'full_refund' | 'partial_refund' | 'no_refund' | 'redo_work' | 'partial_payment' | 'mediated_agreement';
+  refund_amount?: number;
+  payment_release_amount?: number;
+  resolution_details: string;
+  agreed_by_customer: boolean;
+  agreed_by_contractor: boolean;
+  enforced_by_admin: boolean;
+  resolved_by: string;
+  resolved_at: string;
 }
 
-export interface DisputeTemplate {
-  type: string;
-  category: string;
-  title: string;
-  description: string;
-  suggestedResolution: string;
-  evidenceRequired: string[];
-  timelineHours: number;
-  autoResolvable: boolean;
+export interface DisputeMessage {
+  id: string;
+  dispute_id: string;
+  sender_id: string;
+  sender_type: 'customer' | 'contractor' | 'mediator' | 'system';
+  message: string;
+  is_internal: boolean; // Internal notes visible only to mediators/admins
+  created_at: string;
 }
 
-// Dispute Resolution Engine
-export class DisputeResolutionEngine {
-  private static readonly DISPUTE_TEMPLATES: DisputeTemplate[] = [
-    {
-      type: 'quality',
-      category: 'poor_workmanship',
-      title: 'Poor Quality Work',
-      description: 'Customer reports substandard work quality',
-      suggestedResolution: 'Require contractor to redo work or provide partial refund',
-      evidenceRequired: ['photos', 'work_description'],
-      timelineHours: 72,
-      autoResolvable: false
-    },
-    {
-      type: 'payment',
-      category: 'overcharge',
-      title: 'Billing Dispute',
-      description: 'Customer disputes the charged amount',
-      suggestedResolution: 'Review original quote and actual work performed',
-      evidenceRequired: ['original_quote', 'final_invoice', 'work_photos'],
-      timelineHours: 48,
-      autoResolvable: true
-    },
-    {
-      type: 'cancellation',
-      category: 'no_show',
-      title: 'Contractor No-Show',
-      description: 'Contractor failed to appear for scheduled service',
-      suggestedResolution: 'Full refund to customer',
-      evidenceRequired: ['booking_confirmation', 'communication_log'],
-      timelineHours: 24,
-      autoResolvable: true
-    },
-    {
-      type: 'service',
-      category: 'incomplete_work',
-      title: 'Incomplete Service',
-      description: 'Service was not completed as agreed',
-      suggestedResolution: 'Partial refund or completion of work',
-      evidenceRequired: ['original_scope', 'completion_photos'],
-      timelineHours: 48,
-      autoResolvable: false
-    }
-  ];
+export interface MediationSession {
+  id: string;
+  dispute_id: string;
+  mediator_id: string;
+  scheduled_at: string;
+  status: 'scheduled' | 'in_progress' | 'completed' | 'cancelled';
+  meeting_link?: string;
+  notes?: string;
+  outcome?: 'resolved' | 'escalated' | 'no_agreement';
+}
 
-  static async createDispute(params: {
-    customerId: string;
-    contractorId: string;
-    bookingId: string;
-    type: string;
-    category: string;
+// Main Dispute Resolution Service
+export class DisputeResolutionService {
+  /**
+   * Create a new dispute
+   */
+  async createDispute(disputeData: {
+    booking_id: string;
+    initiated_by: 'customer' | 'contractor';
+    initiator_id: string;
+    type: Dispute['type'];
     title: string;
     description: string;
-    disputedAmount: number;
-    evidence?: Omit<DisputeEvidence, 'id' | 'uploadedAt' | 'verified'>[];
-    initiatedBy: 'customer' | 'contractor';
-  }): Promise<Dispute> {
-    const template = this.DISPUTE_TEMPLATES.find(
-      t => t.type === params.type && t.category === params.category
-    );
+    amount_disputed?: number;
+    evidence?: Omit<DisputeEvidence, 'id' | 'dispute_id' | 'submitted_at'>[];
+  }): Promise<{ success: boolean; dispute_id?: string; error?: string }> {
+    try {
+      // Get booking details
+      const { data: booking } = await supabase
+        .from('bookings')
+        .select(`
+          *,
+          contractor_profiles (
+            id,
+            user_id
+          )
+        `)
+        .eq('id', disputeData.booking_id)
+        .single();
 
-    const dispute: Dispute = {
-      id: `dispute_${Date.now()}`,
-      type: params.type as any,
-      status: 'open',
-      priority: this.calculatePriority(params.disputedAmount, params.type),
-      customerId: params.customerId,
-      contractorId: params.contractorId,
-      bookingId: params.bookingId,
-      title: params.title,
-      description: params.description,
-      initiatedBy: params.initiatedBy,
-      category: params.category,
-      disputedAmount: params.disputedAmount,
-      refundRequested: params.disputedAmount,
-      evidence: params.evidence?.map((e, index) => ({
-        ...e,
-        id: `evidence_${index + 1}`,
-        uploadedAt: new Date(),
-        verified: false
-      })) || [],
-      timeline: [{
-        id: 'event_1',
-        type: 'created',
-        description: `Dispute created by ${params.initiatedBy}`,
-        actorId: params.initiatedBy === 'customer' ? params.customerId : params.contractorId,
-        actorType: params.initiatedBy,
-        timestamp: new Date()
-      }],
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      deadlineAt: template ? new Date(Date.now() + template.timelineHours * 60 * 60 * 1000) : undefined
-    };
+      if (!booking) {
+        return { success: false, error: 'Booking not found' };
+      }
 
-    // Auto-assign to appropriate queue
-    await this.assignToQueue(dispute);
+      // Determine priority based on amount and type
+      const priority = this.calculateDisputePriority(
+        disputeData.amount_disputed || booking.final_cost || booking.estimated_cost,
+        disputeData.type
+      );
 
-    // Check if auto-resolvable
-    if (template?.autoResolvable) {
-      await this.attemptAutoResolution(dispute);
+      // Check if there's an existing open dispute for this booking
+      const { data: existingDispute } = await supabase
+        .from('disputes')
+        .select('id')
+        .eq('booking_id', disputeData.booking_id)
+        .in('status', ['open', 'in_mediation', 'escalated'])
+        .single();
+
+      if (existingDispute) {
+        return { success: false, error: 'An active dispute already exists for this booking' };
+      }
+
+      // Get escrow account if exists
+      const { data: escrowAccount } = await supabase
+        .from('escrow_accounts')
+        .select('id')
+        .eq('booking_id', disputeData.booking_id)
+        .single();
+
+      // Create the dispute
+      const { data: dispute, error } = await supabase
+        .from('disputes')
+        .insert({
+          booking_id: disputeData.booking_id,
+          escrow_account_id: escrowAccount?.id,
+          customer_id: booking.customer_id,
+          contractor_id: booking.contractor_profiles.user_id,
+          initiated_by: disputeData.initiated_by,
+          type: disputeData.type,
+          status: 'open',
+          priority,
+          amount_disputed: disputeData.amount_disputed,
+          title: disputeData.title,
+          description: disputeData.description,
+          evidence: [],
+          metadata: {
+            booking_amount: booking.final_cost || booking.estimated_cost,
+            booking_status: booking.status
+          }
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Add evidence if provided
+      if (disputeData.evidence && disputeData.evidence.length > 0) {
+        await this.addEvidence(dispute.id, disputeData.evidence);
+      }
+
+      // Freeze escrow if applicable
+      if (escrowAccount && disputeData.type === 'payment') {
+        await escrowService.initiateDispute(
+          escrowAccount.id,
+          disputeData.title,
+          disputeData.initiator_id
+        );
+      }
+
+      // Send notifications
+      await this.sendDisputeNotifications(dispute.id, 'created');
+
+      // Auto-assign to mediation if high priority
+      if (priority === 'urgent' || priority === 'high') {
+        await this.assignMediator(dispute.id);
+      }
+
+      return { success: true, dispute_id: dispute.id };
+    } catch (error) {
+      console.error('Error creating dispute:', error);
+      return { success: false, error: error.message };
     }
-
-    // TODO: Save to database
-    console.log('Dispute created:', dispute);
-
-    // Send notifications
-    await this.sendDisputeNotifications(dispute, 'created');
-
-    return dispute;
   }
 
-  private static calculatePriority(amount: number, type: string): 'low' | 'medium' | 'high' | 'urgent' {
+  /**
+   * Add evidence to a dispute
+   */
+  async addEvidence(disputeId: string, evidence: Omit<DisputeEvidence, 'id' | 'dispute_id' | 'submitted_at'>[]): Promise<boolean> {
+    try {
+      const evidenceWithTimestamp = evidence.map(e => ({
+        ...e,
+        dispute_id: disputeId,
+        submitted_at: new Date().toISOString()
+      }));
+
+      const { error } = await supabase
+        .from('dispute_evidence')
+        .insert(evidenceWithTimestamp);
+
+      if (error) throw error;
+
+      // Update dispute evidence array
+      const { data: existingEvidence } = await supabase
+        .from('dispute_evidence')
+        .select('*')
+        .eq('dispute_id', disputeId);
+
+      await supabase
+        .from('disputes')
+        .update({
+          evidence: existingEvidence || [],
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', disputeId);
+
+      return true;
+    } catch (error) {
+      console.error('Error adding evidence:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Add a message to a dispute
+   */
+  async addMessage(disputeId: string, messageData: {
+    sender_id: string;
+    sender_type: DisputeMessage['sender_type'];
+    message: string;
+    is_internal?: boolean;
+  }): Promise<boolean> {
+    try {
+      const { error } = await supabase
+        .from('dispute_messages')
+        .insert({
+          dispute_id: disputeId,
+          sender_id: messageData.sender_id,
+          sender_type: messageData.sender_type,
+          message: messageData.message,
+          is_internal: messageData.is_internal || false,
+          created_at: new Date().toISOString()
+        });
+
+      if (error) throw error;
+
+      // Update dispute timestamp
+      await supabase
+        .from('disputes')
+        .update({ updated_at: new Date().toISOString() })
+        .eq('id', disputeId);
+
+      return true;
+    } catch (error) {
+      console.error('Error adding message:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Attempt automated resolution
+   */
+  async attemptAutomatedResolution(disputeId: string): Promise<{
+    success: boolean;
+    resolution?: DisputeResolution;
+    requires_mediation: boolean;
+  }> {
+    try {
+      // Get dispute details
+      const { data: dispute } = await supabase
+        .from('disputes')
+        .select(`
+          *,
+          bookings (
+            *,
+            reviews (rating, content)
+          )
+        `)
+        .eq('id', disputeId)
+        .single();
+
+      if (!dispute) {
+        return { success: false, requires_mediation: true };
+      }
+
+      // Simple automated resolution rules
+      const autoResolution = this.analyzeForAutoResolution(dispute);
+
+      if (autoResolution.canResolve) {
+        const resolution = await this.createResolution(disputeId, {
+          resolution_type: autoResolution.resolution_type,
+          refund_amount: autoResolution.refund_amount,
+          payment_release_amount: autoResolution.payment_release_amount,
+          resolution_details: autoResolution.details,
+          resolved_by: 'system',
+          agreed_by_customer: true,
+          agreed_by_contractor: true,
+          enforced_by_admin: false
+        });
+
+        if (resolution) {
+          await this.executeResolution(disputeId);
+          return { success: true, resolution, requires_mediation: false };
+        }
+      }
+
+      // If auto-resolution fails, move to mediation
+      await this.escalateToMediation(disputeId);
+      return { success: false, requires_mediation: true };
+
+    } catch (error) {
+      console.error('Error in automated resolution:', error);
+      return { success: false, requires_mediation: true };
+    }
+  }
+
+  /**
+   * Escalate dispute to human mediation
+   */
+  async escalateToMediation(disputeId: string): Promise<boolean> {
+    try {
+      // Update dispute status
+      await supabase
+        .from('disputes')
+        .update({
+          status: 'in_mediation',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', disputeId);
+
+      // Assign mediator if not already assigned
+      await this.assignMediator(disputeId);
+
+      // Send notifications
+      await this.sendDisputeNotifications(disputeId, 'escalated');
+
+      return true;
+    } catch (error) {
+      console.error('Error escalating to mediation:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Assign a mediator to a dispute
+   */
+  async assignMediator(disputeId: string): Promise<boolean> {
+    try {
+      // Get available mediators (in a real system, this would be more sophisticated)
+      const { data: mediators } = await supabase
+        .from('users')
+        .select('id, first_name, last_name')
+        .eq('user_type', 'admin')
+        .eq('status', 'active')
+        .limit(5);
+
+      if (!mediators || mediators.length === 0) {
+        console.warn('No available mediators found');
+        return false;
+      }
+
+      // Simple round-robin assignment (in production, consider workload balancing)
+      const selectedMediator = mediators[Math.floor(Math.random() * mediators.length)];
+
+      await supabase
+        .from('disputes')
+        .update({
+          mediator_id: selectedMediator.id,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', disputeId);
+
+      // Add system message about mediator assignment
+      await this.addMessage(disputeId, {
+        sender_id: 'system',
+        sender_type: 'system',
+        message: `Mediator ${selectedMediator.first_name} ${selectedMediator.last_name} has been assigned to this dispute.`,
+        is_internal: false
+      });
+
+      return true;
+    } catch (error) {
+      console.error('Error assigning mediator:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Create a dispute resolution
+   */
+  async createResolution(disputeId: string, resolutionData: Omit<DisputeResolution, 'id' | 'dispute_id' | 'resolved_at'>): Promise<DisputeResolution | null> {
+    try {
+      const { data: resolution, error } = await supabase
+        .from('dispute_resolutions')
+        .insert({
+          dispute_id: disputeId,
+          ...resolutionData,
+          resolved_at: new Date().toISOString()
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Update dispute status
+      await supabase
+        .from('disputes')
+        .update({
+          status: 'resolved',
+          resolved_at: new Date().toISOString(),
+          resolution: resolution,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', disputeId);
+
+      return resolution;
+    } catch (error) {
+      console.error('Error creating resolution:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Execute the dispute resolution (process refunds, release payments, etc.)
+   */
+  async executeResolution(disputeId: string): Promise<boolean> {
+    try {
+      const { data: dispute } = await supabase
+        .from('disputes')
+        .select('*, dispute_resolutions(*)')
+        .eq('id', disputeId)
+        .single();
+
+      if (!dispute || !dispute.dispute_resolutions) {
+        return false;
+      }
+
+      const resolution = dispute.dispute_resolutions;
+
+      // Process refund if applicable
+      if (resolution.refund_amount && resolution.refund_amount > 0) {
+        if (dispute.escrow_account_id) {
+          await escrowService.refundEscrow(
+            dispute.escrow_account_id,
+            resolution.refund_amount,
+            `Dispute resolution: ${resolution.resolution_details}`
+          );
+        }
+      }
+
+      // Release payment if applicable
+      if (resolution.payment_release_amount && resolution.payment_release_amount > 0) {
+        // Find the milestone or create a completion milestone
+        const { data: milestones } = await supabase
+          .from('project_milestones')
+          .select('*')
+          .eq('booking_id', dispute.booking_id)
+          .eq('status', 'completed')
+          .limit(1);
+
+        if (milestones && milestones.length > 0) {
+          await escrowService.releaseMilestonePayment(
+            milestones[0].id,
+            resolution.resolved_by
+          );
+        }
+      }
+
+      // Update booking status if needed
+      if (resolution.resolution_type === 'redo_work') {
+        await supabase
+          .from('bookings')
+          .update({ status: 'in_progress' })
+          .eq('id', dispute.booking_id);
+      } else if (resolution.resolution_type === 'full_refund') {
+        await supabase
+          .from('bookings')
+          .update({ status: 'cancelled' })
+          .eq('id', dispute.booking_id);
+      } else {
+        await supabase
+          .from('bookings')
+          .update({ status: 'completed' })
+          .eq('id', dispute.booking_id);
+      }
+
+      // Send resolution notifications
+      await this.sendDisputeNotifications(disputeId, 'resolved');
+
+      return true;
+    } catch (error) {
+      console.error('Error executing resolution:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Get dispute details with all related data
+   */
+  async getDisputeDetails(disputeId: string): Promise<{
+    dispute: Dispute | null;
+    messages: DisputeMessage[];
+    evidence: DisputeEvidence[];
+    resolution: DisputeResolution | null;
+  }> {
+    try {
+      // Get dispute
+      const { data: dispute } = await supabase
+        .from('disputes')
+        .select(`
+          *,
+          bookings (
+            id,
+            title,
+            description,
+            status,
+            estimated_cost,
+            final_cost
+          ),
+          users!disputes_customer_id_fkey (
+            id,
+            first_name,
+            last_name,
+            email
+          ),
+          contractor_users:users!disputes_contractor_id_fkey (
+            id,
+            first_name,
+            last_name,
+            email
+          ),
+          mediator:users!disputes_mediator_id_fkey (
+            id,
+            first_name,
+            last_name
+          )
+        `)
+        .eq('id', disputeId)
+        .single();
+
+      // Get messages
+      const { data: messages } = await supabase
+        .from('dispute_messages')
+        .select(`
+          *,
+          sender:users (
+            id,
+            first_name,
+            last_name
+          )
+        `)
+        .eq('dispute_id', disputeId)
+        .order('created_at');
+
+      // Get evidence
+      const { data: evidence } = await supabase
+        .from('dispute_evidence')
+        .select(`
+          *,
+          submitter:users (
+            id,
+            first_name,
+            last_name
+          )
+        `)
+        .eq('dispute_id', disputeId)
+        .order('submitted_at');
+
+      // Get resolution
+      const { data: resolution } = await supabase
+        .from('dispute_resolutions')
+        .select('*')
+        .eq('dispute_id', disputeId)
+        .single();
+
+      return {
+        dispute,
+        messages: messages || [],
+        evidence: evidence || [],
+        resolution
+      };
+    } catch (error) {
+      console.error('Error getting dispute details:', error);
+      return {
+        dispute: null,
+        messages: [],
+        evidence: [],
+        resolution: null
+      };
+    }
+  }
+
+  /**
+   * Get all disputes for a user
+   */
+  async getUserDisputes(userId: string, userType: 'customer' | 'contractor'): Promise<Dispute[]> {
+    try {
+      const column = userType === 'customer' ? 'customer_id' : 'contractor_id';
+      
+      const { data: disputes } = await supabase
+        .from('disputes')
+        .select(`
+          *,
+          bookings (
+            id,
+            title,
+            status
+          )
+        `)
+        .eq(column, userId)
+        .order('created_at', { ascending: false });
+
+      return disputes || [];
+    } catch (error) {
+      console.error('Error getting user disputes:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Calculate dispute priority
+   */
+  private calculateDisputePriority(amount: number, type: Dispute['type']): Dispute['priority'] {
     // High-value disputes get higher priority
-    if (amount > 100000) return 'urgent'; // $1000+
-    if (amount > 50000) return 'high';    // $500+
-    if (amount > 20000) return 'medium';  // $200+
-
-    // Fraud and safety issues are always urgent
-    if (type === 'fraud') return 'urgent';
-
+    if (amount > 5000) return 'urgent';
+    if (amount > 2000) return 'high';
+    
+    // Payment disputes get higher priority
+    if (type === 'payment') return 'high';
+    
+    // Quality and timeline disputes are medium priority
+    if (type === 'quality' || type === 'timeline') return 'medium';
+    
     return 'low';
   }
 
-  private static async assignToQueue(dispute: Dispute): Promise<void> {
-    // TODO: Implement queue assignment logic
-    // - Route to appropriate team based on type
-    // - Consider language/location
-    // - Load balancing among agents
-    console.log(`Dispute ${dispute.id} assigned to ${dispute.type} queue`);
-  }
-
-  private static async attemptAutoResolution(dispute: Dispute): Promise<boolean> {
-    // Simple auto-resolution logic for clear-cut cases
-    if (dispute.category === 'no_show' && dispute.evidence.length > 0) {
-      const resolution: DisputeResolution = {
-        type: 'customer_favor',
-        outcome: 'Full refund due to contractor no-show',
-        financialAdjustment: {
-          customerRefund: dispute.disputedAmount,
-          contractorPayout: 0,
-          platformFee: 0
-        },
-        reasoning: 'Automatic resolution: Contractor failed to appear for scheduled service',
-        followUpRequired: false
-      };
-
-      await this.resolveDispute(dispute.id, resolution, 'system');
-      return true;
-    }
-
-    // TODO: Add more auto-resolution rules
-    // - Clear billing errors
-    // - Duplicate charges
-    // - Obvious fraud cases
-
-    return false;
-  }
-
-  static async addEvidence(
-    disputeId: string,
-    evidence: Omit<DisputeEvidence, 'id' | 'uploadedAt' | 'verified'>,
-    uploadedBy: 'customer' | 'contractor' | 'admin'
-  ): Promise<void> {
-    const newEvidence: DisputeEvidence = {
-      ...evidence,
-      id: `evidence_${Date.now()}`,
-      uploadedBy,
-      uploadedAt: new Date(),
-      verified: uploadedBy === 'admin'
-    };
-
-    // TODO: Update dispute in database
-    console.log(`Evidence added to dispute ${disputeId}:`, newEvidence);
-
-    // Add timeline event
-    await this.addTimelineEvent(disputeId, {
-      type: 'evidence_added',
-      description: `${uploadedBy} added evidence: ${evidence.title}`,
-      actorId: 'user_id', // TODO: Get from context
-      actorType: uploadedBy,
-      timestamp: new Date()
-    });
-
-    // Check if we have enough evidence to proceed
-    await this.checkResolutionReadiness(disputeId);
-  }
-
-  static async addResponse(
-    disputeId: string,
-    response: string,
-    respondedBy: 'customer' | 'contractor'
-  ): Promise<void> {
-    // TODO: Add response to dispute
-    console.log(`Response added to dispute ${disputeId} by ${respondedBy}:`, response);
-
-    await this.addTimelineEvent(disputeId, {
-      type: 'response',
-      description: `${respondedBy} provided response`,
-      actorId: 'user_id', // TODO: Get from context
-      actorType: respondedBy,
-      timestamp: new Date(),
-      metadata: { response }
-    });
-
-    // Update dispute status
-    await this.updateDisputeStatus(disputeId, 'investigating');
-  }
-
-  private static async addTimelineEvent(
-    disputeId: string,
-    event: Omit<DisputeEvent, 'id'>
-  ): Promise<void> {
-    const timelineEvent: DisputeEvent = {
-      ...event,
-      id: `event_${Date.now()}`
-    };
-
-    // TODO: Add to dispute timeline in database
-    console.log(`Timeline event added to dispute ${disputeId}:`, timelineEvent);
-  }
-
-  private static async updateDisputeStatus(
-    disputeId: string,
-    status: Dispute['status']
-  ): Promise<void> {
-    // TODO: Update dispute status in database
-    console.log(`Dispute ${disputeId} status updated to: ${status}`);
-
-    await this.addTimelineEvent(disputeId, {
-      type: 'escalated',
-      description: `Dispute status changed to ${status}`,
-      actorId: 'system',
-      actorType: 'system',
-      timestamp: new Date()
-    });
-  }
-
-  private static async checkResolutionReadiness(disputeId: string): Promise<void> {
-    // TODO: Check if dispute has enough evidence and responses to proceed
-    // This might trigger automatic escalation or resolution
-    console.log(`Checking resolution readiness for dispute ${disputeId}`);
-  }
-
-  static async escalateToMediation(disputeId: string, mediatorId: string): Promise<void> {
-    await this.updateDisputeStatus(disputeId, 'mediation');
+  /**
+   * Analyze dispute for automatic resolution
+   */
+  private analyzeForAutoResolution(dispute: any): {
+    canResolve: boolean;
+    resolution_type?: DisputeResolution['resolution_type'];
+    refund_amount?: number;
+    payment_release_amount?: number;
+    details: string;
+  } {
+    // Simple auto-resolution rules
     
-    // TODO: Assign mediator
-    console.log(`Dispute ${disputeId} escalated to mediation with mediator ${mediatorId}`);
-
-    await this.addTimelineEvent(disputeId, {
-      type: 'mediation_started',
-      description: 'Dispute escalated to professional mediation',
-      actorId: mediatorId,
-      actorType: 'admin',
-      timestamp: new Date()
-    });
-
-    // Send mediation notifications
-    await this.sendMediationNotifications(disputeId, mediatorId);
-  }
-
-  static async resolveDispute(
-    disputeId: string,
-    resolution: DisputeResolution,
-    resolvedBy: string
-  ): Promise<void> {
-    // TODO: Update dispute with resolution
-    console.log(`Dispute ${disputeId} resolved:`, resolution);
-
-    // Process financial adjustments
-    await this.processFinancialAdjustments(disputeId, resolution);
-
-    // Update dispute status
-    await this.updateDisputeStatus(disputeId, 'resolved');
-
-    // Add resolution event
-    await this.addTimelineEvent(disputeId, {
-      type: 'resolved',
-      description: `Dispute resolved: ${resolution.outcome}`,
-      actorId: resolvedBy,
-      actorType: 'admin',
-      timestamp: new Date(),
-      metadata: { resolution }
-    });
-
-    // Send resolution notifications
-    await this.sendResolutionNotifications(disputeId, resolution);
-
-    // Schedule follow-up if required
-    if (resolution.followUpRequired) {
-      await this.scheduleFollowUp(disputeId);
+    // If it's a small amount cancellation within 24 hours
+    if (dispute.type === 'cancellation' && 
+        dispute.amount_disputed < 500 &&
+        this.isWithin24Hours(dispute.created_at)) {
+      return {
+        canResolve: true,
+        resolution_type: 'full_refund',
+        refund_amount: dispute.amount_disputed,
+        details: 'Automatic full refund for cancellation within 24 hours of small amount booking'
+      };
     }
-  }
 
-  private static async processFinancialAdjustments(
-    disputeId: string,
-    resolution: DisputeResolution
-  ): Promise<void> {
-    const { customerRefund, contractorPayout, platformFee } = resolution.financialAdjustment;
-
-    // TODO: Process actual financial transactions
-    // - Issue refunds to customer
-    // - Adjust contractor payouts
-    // - Handle platform fee adjustments
-    // - Update escrow accounts
-
-    console.log(`Processing financial adjustments for dispute ${disputeId}:`, {
-      customerRefund,
-      contractorPayout,
-      platformFee
-    });
-  }
-
-  private static async sendDisputeNotifications(
-    dispute: Dispute,
-    event: 'created' | 'updated' | 'resolved'
-  ): Promise<void> {
-    // TODO: Send appropriate notifications
-    // - Email notifications to parties
-    // - SMS for urgent disputes
-    // - In-app notifications
-    // - Admin team alerts
-
-    console.log(`Sending ${event} notifications for dispute ${dispute.id}`);
-  }
-
-  private static async sendMediationNotifications(
-    disputeId: string,
-    mediatorId: string
-  ): Promise<void> {
-    // TODO: Send mediation notifications
-    console.log(`Sending mediation notifications for dispute ${disputeId}`);
-  }
-
-  private static async sendResolutionNotifications(
-    disputeId: string,
-    resolution: DisputeResolution
-  ): Promise<void> {
-    // TODO: Send resolution notifications
-    console.log(`Sending resolution notifications for dispute ${disputeId}`);
-  }
-
-  private static async scheduleFollowUp(disputeId: string): Promise<void> {
-    // TODO: Schedule follow-up actions
-    // - Customer satisfaction survey
-    // - Quality check
-    // - Additional monitoring
-
-    console.log(`Scheduling follow-up for dispute ${disputeId}`);
-  }
-
-  // Analytics and reporting
-  static async getDisputeMetrics(timeframe: 'day' | 'week' | 'month'): Promise<{
-    totalDisputes: number;
-    resolutionRate: number;
-    averageResolutionTime: number;
-    customerSatisfaction: number;
-    topCategories: Array<{ category: string; count: number }>;
-    financialImpact: {
-      totalDisputed: number;
-      totalRefunded: number;
-      averageDispute: number;
-    };
-  }> {
-    // TODO: Calculate actual metrics from database
-    return {
-      totalDisputes: 45,
-      resolutionRate: 0.89,
-      averageResolutionTime: 2.3, // days
-      customerSatisfaction: 4.2,
-      topCategories: [
-        { category: 'quality', count: 18 },
-        { category: 'payment', count: 12 },
-        { category: 'cancellation', count: 8 }
-      ],
-      financialImpact: {
-        totalDisputed: 125000, // $1,250
-        totalRefunded: 67000,  // $670
-        averageDispute: 2778   // $27.78
+    // If contractor has very low ratings and it's a quality dispute
+    if (dispute.type === 'quality' && 
+        dispute.bookings?.reviews?.length > 0) {
+      const avgRating = dispute.bookings.reviews.reduce((sum: number, r: any) => sum + r.rating, 0) / dispute.bookings.reviews.length;
+      
+      if (avgRating < 2.5) {
+        return {
+          canResolve: true,
+          resolution_type: 'partial_refund',
+          refund_amount: dispute.amount_disputed * 0.5,
+          details: 'Automatic partial refund due to consistently poor contractor ratings'
+        };
       }
-    };
-  }
-}
-
-// Automated Mediation System
-export class AutomatedMediator {
-  static async suggestResolution(dispute: Dispute): Promise<{
-    suggestedResolution: DisputeResolution;
-    confidence: number;
-    reasoning: string[];
-  }> {
-    const reasoning: string[] = [];
-    let confidence = 0.5;
-
-    // Analyze evidence strength
-    const evidenceScore = this.analyzeEvidence(dispute.evidence);
-    reasoning.push(`Evidence analysis score: ${evidenceScore.toFixed(2)}`);
-
-    // Analyze dispute history of parties
-    const historyScore = await this.analyzePartyHistory(dispute.customerId, dispute.contractorId);
-    reasoning.push(`Party history score: ${historyScore.toFixed(2)}`);
-
-    // Analyze similar cases
-    const similarCases = await this.findSimilarCases(dispute);
-    reasoning.push(`Found ${similarCases.length} similar cases for reference`);
-
-    // Generate resolution suggestion
-    let suggestedResolution: DisputeResolution;
-
-    if (dispute.category === 'no_show' && evidenceScore > 0.8) {
-      confidence = 0.95;
-      suggestedResolution = {
-        type: 'customer_favor',
-        outcome: 'Full refund recommended due to contractor no-show',
-        financialAdjustment: {
-          customerRefund: dispute.disputedAmount,
-          contractorPayout: 0,
-          platformFee: 0
-        },
-        reasoning: 'Strong evidence of contractor no-show',
-        followUpRequired: false
-      };
-    } else if (dispute.category === 'poor_workmanship' && evidenceScore > 0.7) {
-      confidence = 0.8;
-      suggestedResolution = {
-        type: 'partial_refund',
-        outcome: 'Partial refund and work correction recommended',
-        financialAdjustment: {
-          customerRefund: Math.floor(dispute.disputedAmount * 0.5),
-          contractorPayout: Math.floor(dispute.disputedAmount * 0.5),
-          platformFee: 0
-        },
-        reasoning: 'Evidence suggests quality issues that can be corrected',
-        followUpRequired: true,
-        conditions: ['Contractor must correct identified issues within 7 days']
-      };
-    } else {
-      // Default balanced resolution
-      suggestedResolution = {
-        type: 'compromise',
-        outcome: 'Balanced resolution based on available evidence',
-        financialAdjustment: {
-          customerRefund: Math.floor(dispute.disputedAmount * 0.3),
-          contractorPayout: Math.floor(dispute.disputedAmount * 0.7),
-          platformFee: 0
-        },
-        reasoning: 'Insufficient evidence for clear determination',
-        followUpRequired: true
-      };
     }
 
-    return { suggestedResolution, confidence, reasoning };
-  }
-
-  private static analyzeEvidence(evidence: DisputeEvidence[]): number {
-    if (evidence.length === 0) return 0;
-
-    let score = 0;
-    const weights = {
-      photo: 0.3,
-      document: 0.4,
-      video: 0.5,
-      message: 0.2,
-      receipt: 0.4
-    };
-
-    evidence.forEach(e => {
-      score += weights[e.type] || 0.1;
-      if (e.verified) score += 0.2;
-    });
-
-    return Math.min(score, 1.0);
-  }
-
-  private static async analyzePartyHistory(
-    customerId: string,
-    contractorId: string
-  ): Promise<number> {
-    // TODO: Analyze historical dispute patterns
-    // - Customer dispute frequency
-    // - Contractor quality scores
-    // - Previous resolutions
-    return 0.6; // Placeholder
-  }
-
-  private static async findSimilarCases(dispute: Dispute): Promise<Dispute[]> {
-    // TODO: Find similar disputes using ML similarity matching
-    // - Same category and type
-    // - Similar amounts
-    // - Similar evidence patterns
-    return []; // Placeholder
-  }
-}
-
-// Customer Protection System
-export class CustomerProtection {
-  static async validateDispute(dispute: Dispute): Promise<{
-    isValid: boolean;
-    issues: string[];
-    recommendations: string[];
-  }> {
-    const issues: string[] = [];
-    const recommendations: string[] = [];
-
-    // Check for frivolous disputes
-    if (dispute.disputedAmount < 1000) { // $10
-      issues.push('Dispute amount is very small');
-      recommendations.push('Consider resolving directly with contractor');
-    }
-
-    // Check timing
-    const daysSinceBooking = 7; // TODO: Calculate from booking date
-    if (daysSinceBooking > 30) {
-      issues.push('Dispute filed more than 30 days after service');
-      recommendations.push('Late disputes require additional evidence');
-    }
-
-    // Check evidence quality
-    if (dispute.evidence.length === 0) {
-      issues.push('No evidence provided');
-      recommendations.push('Add photos, documents, or other evidence');
-    }
-
+    // Default: requires human mediation
     return {
-      isValid: issues.length === 0,
-      issues,
-      recommendations
+      canResolve: false,
+      details: 'Dispute requires human mediation for fair resolution'
     };
   }
 
-  static async calculateCustomerRisk(customerId: string): Promise<{
-    riskLevel: 'low' | 'medium' | 'high';
-    factors: string[];
-    recommendations: string[];
-  }> {
-    // TODO: Analyze customer dispute patterns
-    // - Dispute frequency
-    // - Resolution outcomes
-    // - Payment history
-    // - Verification level
+  /**
+   * Check if timestamp is within 24 hours
+   */
+  private isWithin24Hours(timestamp: string): boolean {
+    const now = new Date();
+    const disputeTime = new Date(timestamp);
+    const diffHours = (now.getTime() - disputeTime.getTime()) / (1000 * 60 * 60);
+    return diffHours <= 24;
+  }
 
-    return {
-      riskLevel: 'low',
-      factors: ['Good payment history', 'Verified identity'],
-      recommendations: ['Continue monitoring']
-    };
+  /**
+   * Send notifications about dispute status changes
+   */
+  private async sendDisputeNotifications(disputeId: string, event: 'created' | 'escalated' | 'resolved'): Promise<void> {
+    try {
+      const { data: dispute } = await supabase
+        .from('disputes')
+        .select(`
+          *,
+          customer:users!disputes_customer_id_fkey (email, first_name),
+          contractor:users!disputes_contractor_id_fkey (email, first_name),
+          mediator:users!disputes_mediator_id_fkey (email, first_name)
+        `)
+        .eq('id', disputeId)
+        .single();
+
+      if (!dispute) return;
+
+      // Create notifications
+      const notifications = [];
+
+      switch (event) {
+        case 'created':
+          notifications.push({
+            user_id: dispute.customer_id,
+            type: 'dispute_created',
+            title: 'Dispute Created',
+            content: `Your dispute "${dispute.title}" has been created and is being reviewed.`,
+            data: { dispute_id: disputeId }
+          });
+          
+          notifications.push({
+            user_id: dispute.contractor_id,
+            type: 'dispute_created',
+            title: 'Dispute Filed Against You',
+            content: `A dispute has been filed regarding your work: "${dispute.title}"`,
+            data: { dispute_id: disputeId }
+          });
+          break;
+
+        case 'escalated':
+          notifications.push({
+            user_id: dispute.customer_id,
+            type: 'dispute_escalated',
+            title: 'Dispute Escalated to Mediation',
+            content: `Your dispute "${dispute.title}" has been assigned to a mediator.`,
+            data: { dispute_id: disputeId }
+          });
+          
+          notifications.push({
+            user_id: dispute.contractor_id,
+            type: 'dispute_escalated',
+            title: 'Dispute Escalated to Mediation',
+            content: `The dispute "${dispute.title}" has been assigned to a mediator.`,
+            data: { dispute_id: disputeId }
+          });
+          break;
+
+        case 'resolved':
+          notifications.push({
+            user_id: dispute.customer_id,
+            type: 'dispute_resolved',
+            title: 'Dispute Resolved',
+            content: `Your dispute "${dispute.title}" has been resolved.`,
+            data: { dispute_id: disputeId }
+          });
+          
+          notifications.push({
+            user_id: dispute.contractor_id,
+            type: 'dispute_resolved',
+            title: 'Dispute Resolved',
+            content: `The dispute "${dispute.title}" has been resolved.`,
+            data: { dispute_id: disputeId }
+          });
+          break;
+      }
+
+      // Insert notifications
+      if (notifications.length > 0) {
+        await supabase
+          .from('notifications')
+          .insert(notifications);
+      }
+
+      // TODO: Send email notifications
+      // await this.sendEmailNotifications(dispute, event);
+
+    } catch (error) {
+      console.error('Error sending dispute notifications:', error);
+    }
+  }
+
+  /**
+   * Get dispute statistics for admin dashboard
+   */
+  async getDisputeStatistics(): Promise<{
+    total_disputes: number;
+    open_disputes: number;
+    resolved_disputes: number;
+    average_resolution_time_hours: number;
+    resolution_types: Record<string, number>;
+    dispute_types: Record<string, number>;
+  }> {
+    try {
+      // Get total counts
+      const { data: totalDisputes } = await supabase
+        .from('disputes')
+        .select('id');
+
+      const { data: openDisputes } = await supabase
+        .from('disputes')
+        .select('id')
+        .in('status', ['open', 'in_mediation', 'escalated']);
+
+      const { data: resolvedDisputes } = await supabase
+        .from('disputes')
+        .select('created_at, resolved_at')
+        .eq('status', 'resolved')
+        .not('resolved_at', 'is', null);
+
+      // Calculate average resolution time
+      let avgResolutionTime = 0;
+      if (resolvedDisputes && resolvedDisputes.length > 0) {
+        const totalResolutionTime = resolvedDisputes.reduce((sum, dispute) => {
+          const created = new Date(dispute.created_at);
+          const resolved = new Date(dispute.resolved_at);
+          return sum + (resolved.getTime() - created.getTime());
+        }, 0);
+        avgResolutionTime = totalResolutionTime / resolvedDisputes.length / (1000 * 60 * 60); // Convert to hours
+      }
+
+      // Get resolution types
+      const { data: resolutions } = await supabase
+        .from('dispute_resolutions')
+        .select('resolution_type');
+
+      const resolutionTypes: Record<string, number> = {};
+      resolutions?.forEach(r => {
+        resolutionTypes[r.resolution_type] = (resolutionTypes[r.resolution_type] || 0) + 1;
+      });
+
+      // Get dispute types
+      const { data: allDisputes } = await supabase
+        .from('disputes')
+        .select('type');
+
+      const disputeTypes: Record<string, number> = {};
+      allDisputes?.forEach(d => {
+        disputeTypes[d.type] = (disputeTypes[d.type] || 0) + 1;
+      });
+
+      return {
+        total_disputes: totalDisputes?.length || 0,
+        open_disputes: openDisputes?.length || 0,
+        resolved_disputes: resolvedDisputes?.length || 0,
+        average_resolution_time_hours: avgResolutionTime,
+        resolution_types: resolutionTypes,
+        dispute_types: disputeTypes
+      };
+    } catch (error) {
+      console.error('Error getting dispute statistics:', error);
+      return {
+        total_disputes: 0,
+        open_disputes: 0,
+        resolved_disputes: 0,
+        average_resolution_time_hours: 0,
+        resolution_types: {},
+        dispute_types: {}
+      };
+    }
   }
 }
 
-// Export main classes
-export { DisputeResolutionEngine, AutomatedMediator, CustomerProtection };
+// Export the main service instance
+export const disputeResolutionService = new DisputeResolutionService();

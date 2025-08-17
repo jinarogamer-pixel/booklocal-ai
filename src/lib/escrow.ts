@@ -1,313 +1,284 @@
 import { supabase } from './supabase';
-import { loadStripe } from '@stripe/stripe-js';
+import { PaymentProcessor } from './payments';
 
-const stripe = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
-
-// Types for escrow system
+// Types
 export interface EscrowAccount {
   id: string;
   booking_id: string;
+  customer_id: string;
+  contractor_id: string;
   total_amount: number;
   held_amount: number;
   released_amount: number;
-  status: 'created' | 'funded' | 'partial_release' | 'completed' | 'disputed';
+  platform_fee: number;
+  status: 'created' | 'funded' | 'partial_release' | 'completed' | 'disputed' | 'refunded';
+  payment_intent_id?: string;
   created_at: string;
   updated_at: string;
+  metadata: Record<string, any>;
+}
+
+export interface EscrowMilestone {
+  id: string;
+  escrow_id: string;
+  title: string;
+  description?: string;
+  amount: number;
+  due_date?: string;
+  status: 'pending' | 'in_progress' | 'completed' | 'approved' | 'disputed' | 'released';
+  completed_at?: string;
+  approved_at?: string;
+  approved_by?: string;
+  released_at?: string;
+  sort_order: number;
+  created_at: string;
+  metadata: Record<string, any>;
 }
 
 export interface EscrowTransaction {
   id: string;
-  escrow_account_id: string;
-  type: 'deposit' | 'release' | 'refund' | 'dispute_hold';
-  amount: number;
+  escrow_id: string;
   milestone_id?: string;
-  status: 'pending' | 'completed' | 'failed';
-  stripe_payment_intent_id?: string;
-  description: string;
-  created_at: string;
-}
-
-export interface PaymentMilestone {
-  id: string;
-  booking_id: string;
-  title: string;
-  description: string;
+  type: 'fund' | 'release' | 'refund' | 'fee';
   amount: number;
-  due_date?: string;
-  status: 'pending' | 'in_progress' | 'completed' | 'approved' | 'disputed';
-  completed_at?: string;
-  approved_at?: string;
-  approved_by?: string;
-  sort_order: number;
+  status: 'pending' | 'succeeded' | 'failed' | 'cancelled';
+  payment_intent_id?: string;
+  transfer_id?: string;
+  failure_reason?: string;
+  processed_at?: string;
+  created_at: string;
+  metadata: Record<string, any>;
 }
 
-// Main Escrow Service
 export class EscrowService {
-  private stripeSecretKey: string;
-
-  constructor() {
-    this.stripeSecretKey = process.env.STRIPE_SECRET_KEY || '';
-  }
-
   /**
-   * Create an escrow account for a booking
+   * Create a new escrow account for a booking
    */
-  async createEscrowAccount(bookingId: string, totalAmount: number): Promise<EscrowAccount> {
+  static async createEscrowAccount(params: {
+    bookingId: string;
+    customerId: string;
+    contractorId: string;
+    totalAmount: number;
+    platformFeePercentage?: number;
+    milestones?: Array<{
+      title: string;
+      description?: string;
+      amount: number;
+      dueDate?: string;
+    }>;
+  }): Promise<{ success: boolean; escrow?: EscrowAccount; error?: string }> {
     try {
-      const { data: escrowAccount, error } = await supabase
+      const platformFeePercentage = params.platformFeePercentage || 10; // 10% default
+      const platformFee = Math.round(params.totalAmount * (platformFeePercentage / 100));
+
+      // Create escrow account
+      const { data: escrow, error: escrowError } = await supabase
         .from('escrow_accounts')
         .insert({
-          booking_id: bookingId,
-          total_amount: totalAmount,
+          booking_id: params.bookingId,
+          customer_id: params.customerId,
+          contractor_id: params.contractorId,
+          total_amount: params.totalAmount,
           held_amount: 0,
           released_amount: 0,
-          status: 'created'
+          platform_fee: platformFee,
+          status: 'created',
+          metadata: {
+            created_by: 'system',
+            platform_fee_percentage: platformFeePercentage
+          }
         })
         .select()
         .single();
 
-      if (error) throw error;
-      return escrowAccount;
+      if (escrowError) throw escrowError;
+
+      // Create milestones if provided
+      if (params.milestones && params.milestones.length > 0) {
+        const milestones = params.milestones.map((milestone, index) => ({
+          escrow_id: escrow.id,
+          title: milestone.title,
+          description: milestone.description,
+          amount: milestone.amount,
+          due_date: milestone.dueDate,
+          status: 'pending' as const,
+          sort_order: index + 1,
+          metadata: {}
+        }));
+
+        const { error: milestonesError } = await supabase
+          .from('escrow_milestones')
+          .insert(milestones);
+
+        if (milestonesError) throw milestonesError;
+      }
+
+      // Log the creation
+      await this.logEscrowActivity(escrow.id, 'created', {
+        total_amount: params.totalAmount,
+        platform_fee: platformFee,
+        milestones_count: params.milestones?.length || 0
+      });
+
+      return { success: true, escrow };
     } catch (error) {
       console.error('Error creating escrow account:', error);
-      throw error;
+      return { success: false, error: error.message };
     }
   }
 
   /**
-   * Fund the escrow account with customer payment
+   * Fund an escrow account by creating a payment intent
    */
-  async fundEscrow(escrowAccountId: string, paymentMethodId: string, customerId: string): Promise<{
-    success: boolean;
-    payment_intent_id?: string;
-    client_secret?: string;
-    error?: string;
-  }> {
+  static async fundEscrow(params: {
+    escrowId: string;
+    paymentMethodId: string;
+    customerId: string;
+  }): Promise<{ success: boolean; paymentIntentId?: string; error?: string }> {
     try {
-      // Get escrow account details
-      const { data: escrowAccount } = await supabase
+      // Get escrow account
+      const { data: escrow, error: escrowError } = await supabase
         .from('escrow_accounts')
         .select('*')
-        .eq('id', escrowAccountId)
+        .eq('id', params.escrowId)
         .single();
 
-      if (!escrowAccount) {
-        throw new Error('Escrow account not found');
+      if (escrowError) throw escrowError;
+      if (escrow.status !== 'created') {
+        throw new Error('Escrow account is not in created status');
       }
 
-      // Create Stripe payment intent
-      const stripeInstance = await stripe;
-      if (!stripeInstance) throw new Error('Stripe not loaded');
-
-      const response = await fetch('/api/payments/create-payment-intent', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          amount: Math.round(escrowAccount.total_amount * 100), // Convert to cents
-          currency: 'usd',
-          payment_method: paymentMethodId,
-          customer_id: customerId,
-          metadata: {
-            type: 'escrow_funding',
-            escrow_account_id: escrowAccountId,
-            booking_id: escrowAccount.booking_id
-          }
-        })
+      // Create payment intent with manual capture (hold funds)
+      const paymentResult = await PaymentProcessor.createPaymentIntent({
+        amount: escrow.total_amount,
+        currency: 'usd',
+        paymentMethodId: params.paymentMethodId,
+        customerId: params.customerId,
+        captureMethod: 'manual',
+        description: `Escrow funding for booking ${escrow.booking_id}`,
+        metadata: {
+          escrow_id: params.escrowId,
+          booking_id: escrow.booking_id,
+          type: 'escrow_funding'
+        }
       });
 
-      const paymentIntent = await response.json();
-
-      if (paymentIntent.error) {
-        throw new Error(paymentIntent.error);
-      }
-
-      // Record the transaction
-      await supabase
-        .from('transactions')
-        .insert({
-          booking_id: escrowAccount.booking_id,
-          customer_id: customerId,
-          type: 'escrow_hold',
-          amount: escrowAccount.total_amount,
-          platform_fee: escrowAccount.total_amount * 0.05, // 5% platform fee
-          payment_processor_fee: escrowAccount.total_amount * 0.029 + 0.30, // Stripe fees
-          net_amount: escrowAccount.total_amount * 0.921 - 0.30,
-          status: 'pending',
-          provider: 'stripe',
-          external_id: paymentIntent.id,
-          description: 'Escrow funding for booking'
-        });
-
-      return {
-        success: true,
-        payment_intent_id: paymentIntent.id,
-        client_secret: paymentIntent.client_secret
-      };
-    } catch (error) {
-      console.error('Error funding escrow:', error);
-      return {
-        success: false,
-        error: error.message
-      };
-    }
-  }
-
-  /**
-   * Confirm escrow funding after successful payment
-   */
-  async confirmEscrowFunding(escrowAccountId: string, paymentIntentId: string): Promise<boolean> {
-    try {
-      // Verify payment with Stripe
-      const response = await fetch('/api/payments/verify-payment', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          payment_intent_id: paymentIntentId
-        })
-      });
-
-      const verification = await response.json();
-      
-      if (!verification.success || verification.status !== 'succeeded') {
-        throw new Error('Payment verification failed');
+      if (!paymentResult.success || !paymentResult.paymentIntent) {
+        throw new Error(paymentResult.error || 'Payment intent creation failed');
       }
 
       // Update escrow account
-      const { data: escrowAccount } = await supabase
-        .from('escrow_accounts')
-        .select('total_amount')
-        .eq('id', escrowAccountId)
-        .single();
-
-      await supabase
+      const { error: updateError } = await supabase
         .from('escrow_accounts')
         .update({
-          held_amount: escrowAccount.total_amount,
           status: 'funded',
+          held_amount: escrow.total_amount,
+          payment_intent_id: paymentResult.paymentIntent.id,
           updated_at: new Date().toISOString()
         })
-        .eq('id', escrowAccountId);
+        .eq('id', params.escrowId);
 
-      // Update transaction status
+      if (updateError) throw updateError;
+
+      // Create escrow transaction record
       await supabase
-        .from('transactions')
-        .update({
+        .from('escrow_transactions')
+        .insert({
+          escrow_id: params.escrowId,
+          type: 'fund',
+          amount: escrow.total_amount,
           status: 'succeeded',
-          processed_at: new Date().toISOString()
-        })
-        .eq('external_id', paymentIntentId);
+          payment_intent_id: paymentResult.paymentIntent.id,
+          processed_at: new Date().toISOString(),
+          metadata: {
+            payment_method_id: params.paymentMethodId,
+            customer_id: params.customerId
+          }
+        });
 
-      return true;
+      // Log the activity
+      await this.logEscrowActivity(params.escrowId, 'funded', {
+        amount: escrow.total_amount,
+        payment_intent_id: paymentResult.paymentIntent.id
+      });
+
+      return { success: true, paymentIntentId: paymentResult.paymentIntent.id };
     } catch (error) {
-      console.error('Error confirming escrow funding:', error);
-      return false;
+      console.error('Error funding escrow:', error);
+      return { success: false, error: error.message };
     }
   }
 
   /**
-   * Create payment milestones for a booking
+   * Release a milestone payment to the contractor
    */
-  async createMilestones(bookingId: string, milestones: Omit<PaymentMilestone, 'id' | 'booking_id' | 'created_at'>[]): Promise<PaymentMilestone[]> {
+  static async releaseMilestone(params: {
+    escrowId: string;
+    milestoneId: string;
+    approvedBy: string;
+    contractorStripeAccountId: string;
+  }): Promise<{ success: boolean; transferId?: string; error?: string }> {
     try {
-      const milestonesWithBookingId = milestones.map(milestone => ({
-        ...milestone,
-        booking_id: bookingId
-      }));
-
-      const { data: createdMilestones, error } = await supabase
-        .from('project_milestones')
-        .insert(milestonesWithBookingId)
-        .select();
-
-      if (error) throw error;
-      return createdMilestones;
-    } catch (error) {
-      console.error('Error creating milestones:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Release payment for a completed milestone
-   */
-  async releaseMilestonePayment(milestoneId: string, approvedBy: string): Promise<{
-    success: boolean;
-    payout_id?: string;
-    error?: string;
-  }> {
-    try {
-      // Get milestone and booking details
-      const { data: milestone } = await supabase
-        .from('project_milestones')
-        .select(`
-          *,
-          bookings (
-            id,
-            contractor_id,
-            customer_id,
-            contractor_profiles (
-              user_id,
-              users (
-                email
-              )
-            )
-          )
-        `)
-        .eq('id', milestoneId)
-        .single();
-
-      if (!milestone || milestone.status !== 'completed') {
-        throw new Error('Milestone not found or not completed');
-      }
-
-      // Get escrow account
-      const { data: escrowAccount } = await supabase
+      // Get escrow and milestone
+      const { data: escrow, error: escrowError } = await supabase
         .from('escrow_accounts')
         .select('*')
-        .eq('booking_id', milestone.booking_id)
+        .eq('id', params.escrowId)
         .single();
 
-      if (!escrowAccount || escrowAccount.held_amount < milestone.amount) {
+      if (escrowError) throw escrowError;
+
+      const { data: milestone, error: milestoneError } = await supabase
+        .from('escrow_milestones')
+        .select('*')
+        .eq('id', params.milestoneId)
+        .eq('escrow_id', params.escrowId)
+        .single();
+
+      if (milestoneError) throw milestoneError;
+
+      // Validate milestone can be released
+      if (milestone.status !== 'approved') {
+        throw new Error('Milestone must be approved before release');
+      }
+
+      if (escrow.held_amount < milestone.amount) {
         throw new Error('Insufficient funds in escrow');
       }
 
-      // Create payout to contractor
-      const payoutResponse = await fetch('/api/payments/create-payout', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          amount: Math.round(milestone.amount * 100), // Convert to cents
-          contractor_id: milestone.bookings.contractor_id,
-          milestone_id: milestoneId,
-          description: `Payment for milestone: ${milestone.title}`
-        })
+      // Calculate transfer amount (milestone amount minus platform fee)
+      const platformFeeAmount = Math.round(milestone.amount * (escrow.metadata.platform_fee_percentage || 10) / 100);
+      const transferAmount = milestone.amount - platformFeeAmount;
+
+      // Create transfer to contractor
+      const transferResult = await PaymentProcessor.transferFunds({
+        amount: transferAmount,
+        destination: params.contractorStripeAccountId,
+        description: `Milestone payment: ${milestone.title}`,
+        metadata: {
+          escrow_id: params.escrowId,
+          milestone_id: params.milestoneId,
+          booking_id: escrow.booking_id,
+          platform_fee: platformFeeAmount
+        }
       });
 
-      const payout = await payoutResponse.json();
-
-      if (!payout.success) {
-        throw new Error(payout.error || 'Payout creation failed');
+      if (!transferResult.success) {
+        throw new Error(transferResult.error || 'Transfer failed');
       }
 
       // Update milestone status
       await supabase
-        .from('project_milestones')
+        .from('escrow_milestones')
         .update({
-          status: 'approved',
-          approved_at: new Date().toISOString(),
-          approved_by: approvedBy
+          status: 'released',
+          released_at: new Date().toISOString()
         })
-        .eq('id', milestoneId);
+        .eq('id', params.milestoneId);
 
       // Update escrow account
-      const newHeldAmount = escrowAccount.held_amount - milestone.amount;
-      const newReleasedAmount = escrowAccount.released_amount + milestone.amount;
+      const newHeldAmount = escrow.held_amount - milestone.amount;
+      const newReleasedAmount = escrow.released_amount + milestone.amount;
       const newStatus = newHeldAmount === 0 ? 'completed' : 'partial_release';
 
       await supabase
@@ -318,94 +289,89 @@ export class EscrowService {
           status: newStatus,
           updated_at: new Date().toISOString()
         })
-        .eq('id', escrowAccount.id);
+        .eq('id', params.escrowId);
 
-      // Record the transaction
+      // Create transaction record
       await supabase
-        .from('transactions')
+        .from('escrow_transactions')
         .insert({
-          booking_id: milestone.booking_id,
-          milestone_id: milestoneId,
-          contractor_id: milestone.bookings.contractor_id,
-          type: 'escrow_release',
+          escrow_id: params.escrowId,
+          milestone_id: params.milestoneId,
+          type: 'release',
           amount: milestone.amount,
-          platform_fee: milestone.amount * 0.05,
-          net_amount: milestone.amount * 0.95,
           status: 'succeeded',
-          provider: 'stripe',
-          external_id: payout.payout_id,
-          description: `Milestone payment: ${milestone.title}`,
-          processed_at: new Date().toISOString()
+          transfer_id: transferResult.transferId,
+          processed_at: new Date().toISOString(),
+          metadata: {
+            transfer_amount: transferAmount,
+            platform_fee: platformFeeAmount,
+            approved_by: params.approvedBy
+          }
         });
 
-      return {
-        success: true,
-        payout_id: payout.payout_id
-      };
+      // Log the activity
+      await this.logEscrowActivity(params.escrowId, 'milestone_released', {
+        milestone_id: params.milestoneId,
+        milestone_title: milestone.title,
+        amount: milestone.amount,
+        transfer_amount: transferAmount,
+        platform_fee: platformFeeAmount
+      });
+
+      return { success: true, transferId: transferResult.transferId };
     } catch (error) {
-      console.error('Error releasing milestone payment:', error);
-      return {
-        success: false,
-        error: error.message
-      };
+      console.error('Error releasing milestone:', error);
+      return { success: false, error: error.message };
     }
   }
 
   /**
-   * Refund money from escrow back to customer
+   * Refund escrow funds back to customer
    */
-  async refundEscrow(escrowAccountId: string, amount: number, reason: string): Promise<{
-    success: boolean;
-    refund_id?: string;
-    error?: string;
-  }> {
+  static async refundEscrow(params: {
+    escrowId: string;
+    amount?: number; // If not provided, refunds all held amount
+    reason: string;
+    refundedBy: string;
+  }): Promise<{ success: boolean; refundId?: string; error?: string }> {
     try {
       // Get escrow account
-      const { data: escrowAccount } = await supabase
+      const { data: escrow, error: escrowError } = await supabase
         .from('escrow_accounts')
         .select('*')
-        .eq('id', escrowAccountId)
+        .eq('id', params.escrowId)
         .single();
 
-      if (!escrowAccount || escrowAccount.held_amount < amount) {
-        throw new Error('Insufficient funds in escrow for refund');
+      if (escrowError) throw escrowError;
+
+      if (escrow.held_amount === 0) {
+        throw new Error('No funds available for refund');
       }
 
-      // Get the original payment intent for refund
-      const { data: originalTransaction } = await supabase
-        .from('transactions')
-        .select('external_id')
-        .eq('booking_id', escrowAccount.booking_id)
-        .eq('type', 'escrow_hold')
-        .eq('status', 'succeeded')
-        .single();
-
-      if (!originalTransaction) {
-        throw new Error('Original payment not found');
+      const refundAmount = params.amount || escrow.held_amount;
+      if (refundAmount > escrow.held_amount) {
+        throw new Error('Refund amount exceeds held amount');
       }
 
-      // Create refund through Stripe
-      const refundResponse = await fetch('/api/payments/create-refund', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          payment_intent_id: originalTransaction.external_id,
-          amount: Math.round(amount * 100), // Convert to cents
-          reason: reason
-        })
+      // Create refund
+      const refundResult = await PaymentProcessor.refundPayment({
+        paymentIntentId: escrow.payment_intent_id,
+        amount: refundAmount,
+        reason: params.reason,
+        metadata: {
+          escrow_id: params.escrowId,
+          booking_id: escrow.booking_id,
+          refunded_by: params.refundedBy
+        }
       });
 
-      const refund = await refundResponse.json();
-
-      if (!refund.success) {
-        throw new Error(refund.error || 'Refund creation failed');
+      if (!refundResult.success) {
+        throw new Error(refundResult.error || 'Refund failed');
       }
 
       // Update escrow account
-      const newHeldAmount = escrowAccount.held_amount - amount;
-      const newStatus = newHeldAmount === 0 ? 'completed' : escrowAccount.status;
+      const newHeldAmount = escrow.held_amount - refundAmount;
+      const newStatus = newHeldAmount === 0 ? 'refunded' : escrow.status;
 
       await supabase
         .from('escrow_accounts')
@@ -414,260 +380,236 @@ export class EscrowService {
           status: newStatus,
           updated_at: new Date().toISOString()
         })
-        .eq('id', escrowAccountId);
+        .eq('id', params.escrowId);
 
-      // Record the refund transaction
+      // Create transaction record
       await supabase
-        .from('transactions')
+        .from('escrow_transactions')
         .insert({
-          booking_id: escrowAccount.booking_id,
+          escrow_id: params.escrowId,
           type: 'refund',
-          amount: amount,
-          net_amount: amount,
+          amount: refundAmount,
           status: 'succeeded',
-          provider: 'stripe',
-          external_id: refund.refund_id,
-          description: `Refund: ${reason}`,
-          processed_at: new Date().toISOString()
+          payment_intent_id: refundResult.refundId,
+          processed_at: new Date().toISOString(),
+          metadata: {
+            reason: params.reason,
+            refunded_by: params.refundedBy
+          }
         });
 
-      return {
-        success: true,
-        refund_id: refund.refund_id
-      };
+      // Log the activity
+      await this.logEscrowActivity(params.escrowId, 'refunded', {
+        amount: refundAmount,
+        reason: params.reason,
+        refunded_by: params.refundedBy
+      });
+
+      return { success: true, refundId: refundResult.refundId };
     } catch (error) {
-      console.error('Error processing refund:', error);
-      return {
-        success: false,
-        error: error.message
-      };
+      console.error('Error refunding escrow:', error);
+      return { success: false, error: error.message };
     }
   }
 
   /**
-   * Handle dispute - freeze funds and initiate resolution
+   * Approve a milestone for release
    */
-  async initiateDispute(escrowAccountId: string, disputeReason: string, initiatedBy: string): Promise<{
-    success: boolean;
-    dispute_id?: string;
-    error?: string;
-  }> {
+  static async approveMilestone(params: {
+    milestoneId: string;
+    approvedBy: string;
+    notes?: string;
+  }): Promise<{ success: boolean; error?: string }> {
+    try {
+      const { error } = await supabase
+        .from('escrow_milestones')
+        .update({
+          status: 'approved',
+          approved_at: new Date().toISOString(),
+          approved_by: params.approvedBy,
+          metadata: {
+            approval_notes: params.notes,
+            approved_timestamp: new Date().toISOString()
+          }
+        })
+        .eq('id', params.milestoneId);
+
+      if (error) throw error;
+
+      return { success: true };
+    } catch (error) {
+      console.error('Error approving milestone:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
+   * Dispute an escrow account
+   */
+  static async disputeEscrow(params: {
+    escrowId: string;
+    disputedBy: string;
+    reason: string;
+    description?: string;
+  }): Promise<{ success: boolean; error?: string }> {
     try {
       // Update escrow status to disputed
-      await supabase
+      const { error: escrowError } = await supabase
         .from('escrow_accounts')
         .update({
           status: 'disputed',
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
+          metadata: {
+            dispute_reason: params.reason,
+            dispute_description: params.description,
+            disputed_by: params.disputedBy,
+            disputed_at: new Date().toISOString()
+          }
         })
-        .eq('id', escrowAccountId);
+        .eq('id', params.escrowId);
 
-      // Create dispute record
-      const { data: dispute } = await supabase
-        .from('disputes')
-        .insert({
-          escrow_account_id: escrowAccountId,
-          reason: disputeReason,
-          initiated_by: initiatedBy,
-          status: 'open',
-          created_at: new Date().toISOString()
-        })
-        .select()
-        .single();
+      if (escrowError) throw escrowError;
 
-      // Notify admin team
-      await this.notifyDisputeTeam(dispute.id, disputeReason);
+      // Log the dispute
+      await this.logEscrowActivity(params.escrowId, 'disputed', {
+        disputed_by: params.disputedBy,
+        reason: params.reason,
+        description: params.description
+      });
 
-      return {
-        success: true,
-        dispute_id: dispute.id
-      };
+      // TODO: Create dispute record in disputes table
+      // TODO: Notify admin/support team
+
+      return { success: true };
     } catch (error) {
-      console.error('Error initiating dispute:', error);
-      return {
-        success: false,
-        error: error.message
-      };
+      console.error('Error disputing escrow:', error);
+      return { success: false, error: error.message };
     }
   }
 
   /**
-   * Get escrow account status and transaction history
+   * Get escrow account with milestones
    */
-  async getEscrowStatus(bookingId: string): Promise<{
-    escrow_account: EscrowAccount | null;
-    milestones: PaymentMilestone[];
-    transactions: any[];
+  static async getEscrowAccount(escrowId: string): Promise<{
+    success: boolean;
+    escrow?: EscrowAccount & { milestones: EscrowMilestone[] };
+    error?: string;
   }> {
     try {
-      // Get escrow account
-      const { data: escrowAccount } = await supabase
+      const { data: escrow, error: escrowError } = await supabase
         .from('escrow_accounts')
-        .select('*')
-        .eq('booking_id', bookingId)
+        .select(`
+          *,
+          milestones:escrow_milestones(*)
+        `)
+        .eq('id', escrowId)
         .single();
 
-      // Get milestones
-      const { data: milestones } = await supabase
-        .from('project_milestones')
-        .select('*')
-        .eq('booking_id', bookingId)
-        .order('sort_order');
+      if (escrowError) throw escrowError;
 
-      // Get transactions
-      const { data: transactions } = await supabase
-        .from('transactions')
+      return { success: true, escrow };
+    } catch (error) {
+      console.error('Error getting escrow account:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
+   * Get escrow transactions
+   */
+  static async getEscrowTransactions(escrowId: string): Promise<{
+    success: boolean;
+    transactions?: EscrowTransaction[];
+    error?: string;
+  }> {
+    try {
+      const { data: transactions, error } = await supabase
+        .from('escrow_transactions')
         .select('*')
-        .eq('booking_id', bookingId)
+        .eq('escrow_id', escrowId)
         .order('created_at', { ascending: false });
 
-      return {
-        escrow_account: escrowAccount,
-        milestones: milestones || [],
-        transactions: transactions || []
-      };
+      if (error) throw error;
+
+      return { success: true, transactions };
     } catch (error) {
-      console.error('Error getting escrow status:', error);
-      return {
-        escrow_account: null,
-        milestones: [],
-        transactions: []
-      };
+      console.error('Error getting escrow transactions:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
+   * Log escrow activity for audit trail
+   */
+  private static async logEscrowActivity(
+    escrowId: string,
+    activity: string,
+    details: Record<string, any>
+  ): Promise<void> {
+    try {
+      await supabase
+        .from('escrow_activity_logs')
+        .insert({
+          escrow_id: escrowId,
+          activity,
+          details,
+          created_at: new Date().toISOString()
+        });
+    } catch (error) {
+      console.error('Error logging escrow activity:', error);
+      // Don't throw - logging errors shouldn't break main functionality
     }
   }
 
   /**
    * Calculate platform fees
    */
-  calculateFees(amount: number): {
-    platform_fee: number;
-    stripe_fee: number;
-    contractor_payout: number;
-  } {
-    const platform_fee = amount * 0.05; // 5% platform fee
-    const stripe_fee = amount * 0.029 + 0.30; // Stripe's fee structure
-    const contractor_payout = amount - platform_fee - stripe_fee;
-
-    return {
-      platform_fee: Math.round(platform_fee * 100) / 100,
-      stripe_fee: Math.round(stripe_fee * 100) / 100,
-      contractor_payout: Math.round(contractor_payout * 100) / 100
-    };
+  static calculatePlatformFee(amount: number, feePercentage: number = 10): number {
+    return Math.round(amount * (feePercentage / 100));
   }
 
   /**
-   * Auto-release payment after work completion + grace period
+   * Get escrow statistics for admin dashboard
    */
-  async autoReleasePayments(): Promise<void> {
+  static async getEscrowStats(): Promise<{
+    success: boolean;
+    stats?: {
+      total_escrows: number;
+      total_volume: number;
+      held_amount: number;
+      released_amount: number;
+      disputed_count: number;
+    };
+    error?: string;
+  }> {
     try {
-      // Find milestones that are completed but not yet approved after grace period
-      const gracePeriodHours = 72; // 3 days
-      const cutoffTime = new Date(Date.now() - gracePeriodHours * 60 * 60 * 1000);
+      const { data, error } = await supabase
+        .from('escrow_accounts')
+        .select('total_amount, held_amount, released_amount, status');
 
-      const { data: milestonesForRelease } = await supabase
-        .from('project_milestones')
-        .select('*')
-        .eq('status', 'completed')
-        .lt('completed_at', cutoffTime.toISOString());
+      if (error) throw error;
 
-      if (milestonesForRelease && milestonesForRelease.length > 0) {
-        for (const milestone of milestonesForRelease) {
-          console.log(`Auto-releasing payment for milestone ${milestone.id}`);
-          await this.releaseMilestonePayment(milestone.id, 'system_auto_release');
-        }
-      }
+      const stats = data.reduce((acc, escrow) => {
+        acc.total_escrows++;
+        acc.total_volume += escrow.total_amount;
+        acc.held_amount += escrow.held_amount;
+        acc.released_amount += escrow.released_amount;
+        if (escrow.status === 'disputed') acc.disputed_count++;
+        return acc;
+      }, {
+        total_escrows: 0,
+        total_volume: 0,
+        held_amount: 0,
+        released_amount: 0,
+        disputed_count: 0
+      });
+
+      return { success: true, stats };
     } catch (error) {
-      console.error('Error in auto-release process:', error);
+      console.error('Error getting escrow stats:', error);
+      return { success: false, error: error.message };
     }
-  }
-
-  private async notifyDisputeTeam(disputeId: string, reason: string): Promise<void> {
-    // Implementation would send notification to admin team
-    // This could be email, Slack webhook, etc.
-    console.log(`Dispute initiated: ${disputeId}, Reason: ${reason}`);
-    
-    // Example: Send email notification
-    // await sendEmail({
-    //   to: 'disputes@booklocal.com',
-    //   subject: 'New Dispute Initiated',
-    //   body: `Dispute ID: ${disputeId}\nReason: ${reason}`
-    // });
   }
 }
 
-// Utility functions for escrow management
-export const escrowUtils = {
-  /**
-   * Create standard milestone structure for a booking
-   */
-  createStandardMilestones(totalAmount: number, serviceType: string): Omit<PaymentMilestone, 'id' | 'booking_id' | 'created_at'>[] {
-    const milestones = [];
-    
-    if (totalAmount <= 500) {
-      // Small jobs: Single payment on completion
-      milestones.push({
-        title: 'Project Completion',
-        description: 'Payment upon job completion and customer approval',
-        amount: totalAmount,
-        status: 'pending' as const,
-        sort_order: 1
-      });
-    } else if (totalAmount <= 2000) {
-      // Medium jobs: 50% upfront, 50% on completion
-      milestones.push(
-        {
-          title: 'Project Start',
-          description: 'Initial payment to begin work',
-          amount: totalAmount * 0.5,
-          status: 'pending' as const,
-          sort_order: 1
-        },
-        {
-          title: 'Project Completion',
-          description: 'Final payment upon completion',
-          amount: totalAmount * 0.5,
-          status: 'pending' as const,
-          sort_order: 2
-        }
-      );
-    } else {
-      // Large jobs: 30% start, 40% midpoint, 30% completion
-      milestones.push(
-        {
-          title: 'Project Start',
-          description: 'Initial payment to begin work',
-          amount: totalAmount * 0.3,
-          status: 'pending' as const,
-          sort_order: 1
-        },
-        {
-          title: 'Midpoint Progress',
-          description: 'Payment at 50% project completion',
-          amount: totalAmount * 0.4,
-          status: 'pending' as const,
-          sort_order: 2
-        },
-        {
-          title: 'Project Completion',
-          description: 'Final payment upon completion',
-          amount: totalAmount * 0.3,
-          status: 'pending' as const,
-          sort_order: 3
-        }
-      );
-    }
-    
-    return milestones;
-  },
-
-  /**
-   * Validate milestone amounts match total
-   */
-  validateMilestones(milestones: PaymentMilestone[], expectedTotal: number): boolean {
-    const totalMilestoneAmount = milestones.reduce((sum, milestone) => sum + milestone.amount, 0);
-    return Math.abs(totalMilestoneAmount - expectedTotal) < 0.01; // Allow for small rounding differences
-  }
-};
-
-// Export the main service instance
-export const escrowService = new EscrowService();
+export default EscrowService;

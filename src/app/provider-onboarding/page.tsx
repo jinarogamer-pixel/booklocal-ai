@@ -22,6 +22,9 @@ import {
   Eye,
   Loader2
 } from 'lucide-react';
+import { uploadVerificationDocument, DocumentType } from '@/lib/fileUpload';
+import { backgroundCheckService, ContractorData } from '@/lib/backgroundCheck';
+import { JumioVerification } from '@/lib/verification';
 
 interface OnboardingStep {
   id: string;
@@ -557,14 +560,52 @@ function BankingInfoStep({ formData, setFormData, errors }: any) {
 
 // Step 6: Document Upload
 function DocumentUploadStep({ formData, setFormData, errors }: any) {
-  const handleFileUpload = (documentType: string, file: File) => {
-    setFormData({
-      ...formData,
-      documents: {
-        ...formData.documents,
-        [documentType]: file
+  const [uploadStatus, setUploadStatus] = useState<Record<string, 'idle' | 'uploading' | 'success' | 'error'>>({});
+  const [uploadErrors, setUploadErrors] = useState<Record<string, string>>({});
+
+  const handleFileUpload = async (documentType: string, file: File) => {
+    setUploadStatus(prev => ({ ...prev, [documentType]: 'uploading' }));
+    setUploadErrors(prev => ({ ...prev, [documentType]: '' }));
+
+    try {
+      // Map document types to DocumentType enum
+      const documentTypeMap: Record<string, DocumentType> = {
+        'governmentId': 'drivers_license',
+        'businessLicense': 'business_license',
+        'insuranceCertificate': 'insurance_cert',
+        'w9Form': 'w9'
+      };
+
+      const result = await uploadVerificationDocument(
+        file, 
+        'temp-user-id', // TODO: Get from auth context
+        documentTypeMap[documentType] || 'other'
+      );
+
+      if (result.success) {
+        setUploadStatus(prev => ({ ...prev, [documentType]: 'success' }));
+        setFormData({
+          ...formData,
+          documents: {
+            ...formData.documents,
+            [documentType]: {
+              file,
+              uploadResult: result
+            }
+          }
+        });
+      } else {
+        throw new Error(result.error || 'Upload failed');
       }
-    });
+
+    } catch (error) {
+      setUploadStatus(prev => ({ ...prev, [documentType]: 'error' }));
+      setUploadErrors(prev => ({ 
+        ...prev, 
+        [documentType]: error instanceof Error ? error.message : 'Upload failed' 
+      }));
+      console.error('Document upload failed:', error);
+    }
   };
 
   const FileUploadField = ({ 
@@ -577,39 +618,74 @@ function DocumentUploadStep({ formData, setFormData, errors }: any) {
     title: string;
     description: string;
     required?: boolean;
-  }) => (
-    <div className="border border-gray-300 rounded-lg p-4">
-      <div className="flex items-center justify-between mb-2">
-        <h4 className="font-medium text-gray-900">{title} {required && '*'}</h4>
-        {formData.documents[documentType] && (
-          <CheckCircle className="w-5 h-5 text-green-600" />
-        )}
-      </div>
-      <p className="text-sm text-gray-600 mb-3">{description}</p>
-      
-      <div className="flex items-center space-x-3">
-        <label className="flex items-center justify-center px-4 py-2 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50">
-          <Upload className="w-4 h-4 mr-2" />
-          <span className="text-sm">Upload File</span>
-          <input
-            type="file"
-            accept=".pdf,.jpg,.jpeg,.png"
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (file) handleFileUpload(documentType, file);
-            }}
-            className="hidden"
-          />
-        </label>
+  }) => {
+    const status = uploadStatus[documentType] || 'idle';
+    const error = uploadErrors[documentType];
+    const document = formData.documents[documentType];
+
+    return (
+      <div className="border border-gray-300 rounded-lg p-4">
+        <div className="flex items-center justify-between mb-2">
+          <h4 className="font-medium text-gray-900">{title} {required && '*'}</h4>
+          {status === 'success' && (
+            <CheckCircle className="w-5 h-5 text-green-600" />
+          )}
+          {status === 'error' && (
+            <AlertCircle className="w-5 h-5 text-red-600" />
+          )}
+          {status === 'uploading' && (
+            <Loader2 className="w-5 h-5 text-blue-600 animate-spin" />
+          )}
+        </div>
+        <p className="text-sm text-gray-600 mb-3">{description}</p>
         
-        {formData.documents[documentType] && (
-          <span className="text-sm text-gray-600">
-            {formData.documents[documentType].name}
-          </span>
+        {error && (
+          <div className="mb-3 p-2 bg-red-50 border border-red-200 rounded text-sm text-red-600">
+            {error}
+          </div>
         )}
+        
+        <div className="flex items-center space-x-3">
+          <label className={`flex items-center justify-center px-4 py-2 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 ${
+            status === 'uploading' ? 'opacity-50 cursor-not-allowed' : ''
+          }`}>
+            {status === 'uploading' ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                <span className="text-sm">Uploading...</span>
+              </>
+            ) : (
+              <>
+                <Upload className="w-4 h-4 mr-2" />
+                <span className="text-sm">{document ? 'Replace File' : 'Upload File'}</span>
+              </>
+            )}
+            <input
+              type="file"
+              accept=".pdf,.jpg,.jpeg,.png,.heic,.heif"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file && status !== 'uploading') {
+                  handleFileUpload(documentType, file);
+                }
+              }}
+              className="hidden"
+              disabled={status === 'uploading'}
+            />
+          </label>
+          
+          {document && status === 'success' && (
+            <div className="flex items-center space-x-2">
+              <CheckCircle className="w-4 h-4 text-green-600" />
+              <span className="text-sm text-gray-600">
+                {document.file?.name || 'File uploaded'}
+              </span>
+            </div>
+          )}
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   return (
     <div className="space-y-6">
